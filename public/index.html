@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <title>RifaVital — Maestro</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="admin-page">
+  <main class="admin-shell">
+    <section id="loginView" class="login-card">
+      <h1>RifaVital</h1>
+      <p>Administración maestra</p>
+      <label>Email<input id="email" type="email" autocomplete="email"></label>
+      <label>Contraseña<input id="password" type="password" autocomplete="current-password"></label>
+      <button id="loginBtn">Ingresar</button>
+      <p id="loginMessage" class="message"></p>
+    </section>
+
+    <section id="masterView" hidden>
+      <header class="master-header">
+        <div>
+          <h1>RifaVital</h1>
+          <p><strong id="assignedCount">0</strong> asignadas · <strong id="freeCount">150</strong> libres</p>
+        </div>
+        <button id="logoutBtn" class="button-light">Salir</button>
+      </header>
+
+      <div class="toolbar">
+        <input id="searchInput" type="search" placeholder="Buscar número, nombre o Pokémon">
+      </div>
+
+      <div class="table-wrap">
+        <table class="master-table">
+          <thead><tr><th>#</th><th>Pokémon</th><th>Titular</th><th>Estado</th><th>Acciones</th></tr></thead>
+          <tbody id="raffleRows"></tbody>
+        </table>
+      </div>
+      <p id="globalMessage" class="message"></p>
+    </section>
+  </main>
+
+  <dialog id="qrDialog">
+    <button id="closeQrBtn" class="dialog-close" aria-label="Cerrar">×</button>
+    <h2 id="qrTitle">QR</h2>
+    <div id="qrBox"></div>
+    <input id="qrLink" readonly>
+    <div class="dialog-actions">
+      <button id="copyQrLinkBtn">Copiar link</button>
+      <button id="downloadQrBtn" class="button-light">Descargar QR</button>
+    </div>
+  </dialog>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
