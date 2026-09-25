@@ -6,7 +6,8 @@ import { pokemonName, pokemonSprite } from "/pokemon.js";
 
 const app=initializeApp(firebaseConfig), auth=getAuth(app), db=getFirestore(app);
 const $=id=>document.getElementById(id), state=new Map();
-const ticketId=n=>String(n).padStart(3,"0");
+const formatRaffleNumber=n=>String(n).padStart(3,"0");
+const ticketId=n=>formatRaffleNumber(n);
 const makeToken=()=>{const bytes=new Uint8Array(24);crypto.getRandomValues(bytes);return Array.from(bytes,b=>b.toString(16).padStart(2,"0")).join("")};
 const certificateUrl=token=>`${location.origin}/certificado?id=${encodeURIComponent(token)}`;
 const setMessage=text=>$("globalMessage").textContent=text||"";
@@ -19,7 +20,7 @@ function renderRows(){
     const data=state.get(n)||{},tr=document.createElement("tr");
     tr.dataset.number=String(n);tr.dataset.pokemon=pokemonName(n).toLowerCase();tr.dataset.owner=(data.ownerName||"").toLowerCase();
     tr.innerHTML=`
-      <td class="number-cell">${n}</td>
+      <td class="number-cell">${formatRaffleNumber(n)}</td>
       <td><div class="pokemon-cell"><img class="pokemon-thumb" src="${pokemonSprite(n)}" alt="" loading="lazy"><strong>${pokemonName(n)}</strong></div></td>
       <td><input class="owner-input" value="${escapeHtml(data.ownerName||"")}" placeholder="Libre"></td>
       <td><span class="status ${data.ownerName?"assigned":"free"}">${data.ownerName?"Asignada":"Libre"}</span></td>
@@ -54,18 +55,18 @@ async function handleAction(n,action,tr){
   const current=state.get(n)||{};
   if(action==="save"){
     const ownerName=tr.querySelector(".owner-input").value.trim();
-    if(!ownerName){setMessage(`La rifa #${n} no tiene titular. Usá “Liberar” si querés dejarla libre.`);return}
+    if(!ownerName){setMessage(`La rifa #${formatRaffleNumber(n)} no tiene titular. Usá “Liberar” si querés dejarla libre.`);return}
     await saveTicket(n,ownerName,current,tr);return;
   }
   if(action==="clear"){
     if(!current.ownerName)return;
-    if(!confirm(`¿Liberar la rifa #${n} de ${current.ownerName}?`))return;
+    if(!confirm(`¿Liberar la rifa #${formatRaffleNumber(n)} de ${current.ownerName}?`))return;
     await clearTicket(n,current,tr);return;
   }
   if(!current.certificateId)return;
   const url=certificateUrl(current.certificateId);
   if(action==="open")window.open(url,"_blank","noopener");
-  if(action==="copy"){await navigator.clipboard.writeText(url);setMessage(`Link de la rifa #${n} copiado.`)}
+  if(action==="copy"){await navigator.clipboard.writeText(url);setMessage(`Link de la rifa #${formatRaffleNumber(n)} copiado.`)}
   if(action==="qr")openQr(n,url);
 }
 
@@ -78,7 +79,7 @@ async function saveTicket(n,ownerName,current,tr){
     batch.set(doc(db,"certificates",certificateId),{raffleNumber:n,buyerName:ownerName,pokemonId:n,pokemonName:pokemonName(n),status:"valid",updatedAt:serverTimestamp()},{merge:true});
     await batch.commit();
     state.set(n,{...current,...base,certificateId});
-    renderRows();setMessage(`Rifa #${n} guardada para ${ownerName}.`);
+    renderRows();setMessage(`Rifa #${formatRaffleNumber(n)} guardada para ${ownerName}.`);
   }catch(err){console.error(err);setMessage("No se pudo guardar. Revisá que las reglas de Firestore estén desplegadas.");tr.classList.remove("saving")}
 }
 
@@ -88,12 +89,12 @@ async function clearTicket(n,current,tr){
     const batch=writeBatch(db);
     batch.delete(doc(db,"tickets",ticketId(n)));
     if(current.certificateId)batch.delete(doc(db,"certificates",current.certificateId));
-    await batch.commit();state.delete(n);renderRows();setMessage(`Rifa #${n} liberada.`);
+    await batch.commit();state.delete(n);renderRows();setMessage(`Rifa #${formatRaffleNumber(n)} liberada.`);
   }catch(err){console.error(err);setMessage("No se pudo liberar el número.");tr.classList.remove("saving")}
 }
 
 function openQr(n,url){
-  $("qrTitle").textContent=`Rifa #${n}`;$("qrLink").value=url;$("qrBox").innerHTML="";
+  $("qrTitle").textContent=`Rifa #${formatRaffleNumber(n)}`;$("qrLink").value=url;$("qrBox").innerHTML="";
   new QRCode($("qrBox"),{text:url,width:240,height:240});$("qrDialog").showModal();
 }
 
