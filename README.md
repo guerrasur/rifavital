@@ -337,4 +337,4 @@ Posibles mejoras futuras:
 
 ## Estado
 
-Actualmente el proyecto está en etapa de implementación y configuración de Firebase.
+La aplicación base ya está implementada en el repositorio y conectada al proyecto Firebase `rifavital`. Queda desplegar las reglas de Firestore y Firebase Hosting para publicarla.
