@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <title>RifaVital</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="certificate-page">
+  <main id="certificate" class="certificate" hidden>
+    <h1 id="raffleNumber">RIFA #</h1>
+    <p id="ownerName" class="owner-name"></p>
+    <img id="pokemonImage" class="pokemon-image" alt="">
+    <p class="your-raffle">TU RIFA: <span id="pokemonName"></span></p>
+  </main>
+  <main id="loadingState" class="certificate-state">Cargando…</main>
+  <main id="invalidState" class="certificate-state" hidden><strong>RIFA NO ENCONTRADA</strong></main>
+  <script type="module" src="/certificado.js"></script>
+</body>
+</html>
