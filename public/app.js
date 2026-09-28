@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-import { getFirestore, collection, getDoc, getDocs, doc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
-import { firebaseConfig } from "/firebase-config.js";
+import { getFirestore, collection, getDocs, doc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { firebaseConfig, ADMIN_UID } from "/firebase-config.js";
 import { pokemonName, pokemonSprite } from "/pokemon.js";
 
 const app=initializeApp(firebaseConfig), auth=getAuth(app), db=getFirestore(app);
@@ -116,10 +116,7 @@ $("downloadQrBtn").addEventListener("click",()=>{const canvas=$("qrBox").querySe
 
 onAuthStateChanged(auth,async user=>{
   if(!user){$("loginView").hidden=false;$("masterView").hidden=true;return}
-  try{
-    const admin=await getDoc(doc(db,"admins",user.uid));
-    if(!admin.exists()||admin.data().active!==true){$("loginMessage").textContent="Esta cuenta no está autorizada.";await signOut(auth);return}
-  }catch(err){console.error(err);$("loginMessage").textContent="No se pudo verificar el acceso. Intentá de nuevo.";await signOut(auth);return}
+  if(user.uid!==ADMIN_UID){$("loginMessage").textContent="Esta cuenta no está autorizada.";await signOut(auth);return}
   $("loginView").hidden=true;$("masterView").hidden=false;
   try{await loadTickets()}catch(err){console.error(err);setMessage("Conectado, pero Firestore todavía no permite leer la tabla. Falta desplegar las reglas.")}
 });
