@@ -6,6 +6,8 @@ import { pokemonName, pokemonSprite } from "/pokemon.js";
 
 const app=initializeApp(firebaseConfig), auth=getAuth(app), db=getFirestore(app);
 const $=id=>document.getElementById(id), state=new Map();
+const VERSION="1.2.0";
+let latestVersion=VERSION;
 const TOTAL=150, DISTRIBUTION_TOTAL=144, DISTRIBUTION_PEOPLE=9, DISTRIBUTION_SIZE=16;
 const formatRaffleNumber=n=>String(n).padStart(3,"0");
 const ticketId=n=>formatRaffleNumber(n);
@@ -224,9 +226,49 @@ async function applyBulk(){
   }catch(err){console.error(err);setMessage("No se pudo completar la carga rápida.");$("applyBulkBtn").disabled=false}
 }
 
+
+async function checkForUpdate(){
+  const label=$("versionLabel"),button=$("updateBtn");
+  if(label)label.textContent=`v${VERSION}`;
+  try{
+    const response=await fetch(`/version.json?_=${Date.now()}`,{cache:"no-store",headers:{"Cache-Control":"no-cache"}});
+    if(!response.ok)return;
+    const data=await response.json();
+    latestVersion=String(data.version||VERSION);
+    if(button){
+      if(latestVersion!==VERSION){
+        button.textContent=`Actualizar a v${latestVersion}`;
+        button.hidden=false;
+      }else{
+        button.hidden=true;
+      }
+    }
+  }catch(err){console.debug("No se pudo comprobar la versión.",err)}
+}
+
+async function installLatestVersion(){
+  const button=$("updateBtn");
+  if(button){button.disabled=true;button.textContent="Actualizando…"}
+  try{
+    if("serviceWorker" in navigator){
+      const regs=await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(reg=>reg.unregister()));
+    }
+    if("caches" in window){
+      const keys=await caches.keys();
+      await Promise.all(keys.map(key=>caches.delete(key)));
+    }
+  }catch{}
+  const url=new URL(location.href);
+  url.searchParams.set("_v",latestVersion);
+  url.searchParams.set("_t",Date.now().toString());
+  location.replace(url.toString());
+}
+
 $("loginBtn").addEventListener("click",async()=>{ $("loginMessage").textContent=""; try{await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value)}catch(err){console.error(err);$("loginMessage").textContent="Email o contraseña incorrectos."}});
 $("password").addEventListener("keydown",e=>{if(e.key==="Enter")$("loginBtn").click()});
 $("logoutBtn").addEventListener("click",()=>signOut(auth));
+$("updateBtn").addEventListener("click",installLatestVersion);
 $("searchInput").addEventListener("input",applySearch);
 $("statusFilter").addEventListener("change",applySearch);
 $("clearSearchBtn").addEventListener("click",()=>{$("searchInput").value="";$("statusFilter").value="all";applySearch()});
@@ -245,6 +287,11 @@ $("closeDistributionBtn").addEventListener("click",()=>$("distributionDialog").c
 $("closeQrBtn").addEventListener("click",()=>$("qrDialog").close());
 $("copyQrLinkBtn").addEventListener("click",async()=>{await navigator.clipboard.writeText($("qrLink").value);$("copyQrLinkBtn").textContent="Copiado";setTimeout(()=>$("copyQrLinkBtn").textContent="Copiar link",1000)});
 $("downloadQrBtn").addEventListener("click",()=>{const canvas=$("qrBox").querySelector("canvas"),img=$("qrBox").querySelector("img"),href=canvas?canvas.toDataURL("image/png"):img?.src;if(!href)return;const a=document.createElement("a");a.href=href;a.download="fiebre-de-otono-qr.png";a.click()});
+
+window.addEventListener("focus",checkForUpdate);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)checkForUpdate()});
+setInterval(checkForUpdate,60000);
+checkForUpdate();
 
 onAuthStateChanged(auth,async user=>{
   if(!user){$("loginView").hidden=false;$("masterView").hidden=true;return}
