@@ -6,7 +6,7 @@ import { pokemonName, pokemonSprite } from "/pokemon.js";
 
 const app=initializeApp(firebaseConfig), auth=getAuth(app), db=initializeFirestore(app,{experimentalForceLongPolling:true});
 const $=id=>document.getElementById(id), state=new Map();
-const VERSION="1.4.2";
+const VERSION="1.4.3";
 let latestVersion=VERSION;
 const TOTAL=150, DISTRIBUTION_TOTAL=144, DISTRIBUTION_PEOPLE=9, DISTRIBUTION_SIZE=16;
 const PARTICIPANTS=[
@@ -126,7 +126,14 @@ function renderParticipantGrid(){
       <img src="${pokemonSprite(n)}" alt="${escapeHtml(pokemonName(n))}" loading="lazy">
       <h2>${escapeHtml(pokemonName(n))}</h2>
       ${isAssigned
-        ? `<p class="participant-owner">Asignado a <strong>${escapeHtml(data.ownerName)}</strong></p>`
+        ? `<div class="participant-assigned-info">
+            <p class="participant-owner">Asignado a <strong>${escapeHtml(data.ownerName)}</strong></p>
+            ${data.certificateId ? `
+              <div class="participant-ticket-link">
+                <a href="${certificateUrl(data.certificateId,n)}" target="_blank" rel="noopener" title="${certificateUrl(data.certificateId,n)}">${certificateUrl(data.certificateId,n)}</a>
+                <button type="button" class="participant-copy-link" data-copy-participant-link>Copiar</button>
+              </div>` : ``}
+          </div>`
         : `<div class="participant-assign"><input type="text" maxlength="80" placeholder="Nombre comprador" aria-label="Nombre comprador para rifa ${formatRaffleNumber(n)}"><button type="button">Asignar</button></div>`
       }`;
     if(!isAssigned){
@@ -134,10 +141,34 @@ function renderParticipantGrid(){
       const submit=()=>assignParticipantTicket(n,input.value.trim(),card);
       button.addEventListener("click",submit);
       input.addEventListener("keydown",e=>{if(e.key==="Enter")submit()});
+    }else{
+      const copyButton=card.querySelector("[data-copy-participant-link]");
+      if(copyButton)copyButton.addEventListener("click",()=>copyParticipantTicketLink(n,data.certificateId,copyButton));
     }
     box.appendChild(card);
   }
   $("participantAssignedCount").textContent=assigned;
+}
+
+async function copyParticipantTicketLink(n,certificateId,button){
+  if(!certificateId)return;
+  const url=certificateUrl(certificateId,n),original=button.textContent;
+  try{
+    if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(url);
+    else{
+      const textarea=document.createElement("textarea");
+      textarea.value=url;textarea.setAttribute("readonly","");
+      textarea.style.position="fixed";textarea.style.opacity="0";
+      document.body.appendChild(textarea);textarea.select();
+      document.execCommand("copy");textarea.remove();
+    }
+    button.textContent="Copiado";
+    setParticipantMessage(`Link de la rifa #${formatRaffleNumber(n)} copiado.`);
+    setTimeout(()=>{button.textContent=original},1400);
+  }catch(err){
+    console.error(err);
+    setParticipantMessage("No se pudo copiar el link. Tocá el enlace para abrirlo.");
+  }
 }
 
 async function assignParticipantTicket(n,ownerName,card){
