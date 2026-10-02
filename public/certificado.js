@@ -3,7 +3,7 @@ import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10
 import { firebaseConfig } from "/firebase-config.js";
 import { pokemonSprite } from "/pokemon.js";
 
-const VERSION="1.2.0";
+const VERSION="1.3.0";
 const app=initializeApp(firebaseConfig),db=getFirestore(app),$=id=>document.getElementById(id);
 const formatRaffleNumber=n=>String(n).padStart(3,"0");
 function invalid(){$("loadingState").hidden=true;$("certificate").hidden=true;$("invalidState").hidden=false}
@@ -15,13 +15,14 @@ function invalid(){$("loadingState").hidden=true;$("certificate").hidden=true;$(
     const snap=await getDoc(doc(db,"certificates",id));
     if(!snap.exists())return invalid();
     const data=snap.data();if(data.status!=="valid")return invalid();
-    const n=Number(data.raffleNumber);
+    const n=Number(data.raffleNumber),expected=Number(document.body.dataset.raffleNumber||0);
+    if(expected&&expected!==n)return invalid();
     $("raffleNumber").textContent=`RIFA #${formatRaffleNumber(n)}`;
     $("ownerName").textContent=data.buyerName||"";
     $("pokemonImage").src=pokemonSprite(n);
     $("pokemonImage").alt=data.pokemonName||"";
     $("pokemonName").textContent=(data.pokemonName||"").toUpperCase();
-    document.title=`Rifa #${formatRaffleNumber(n)} — ${data.pokemonName||"RifaVital"}`;
+    document.title=`Rifa “Fiebre de otoño”: NRO ${formatRaffleNumber(n)}`;
     $("loadingState").hidden=true;$("certificate").hidden=false;
   }catch(err){console.error(err);invalid()}
 })();

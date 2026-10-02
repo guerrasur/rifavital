@@ -8,19 +8,84 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.active == true;
     }
 
+    function inParticipantBlock(name, n) {
+      return (name == "Juana" && n >= 1 && n <= 16)
+        || (name == "Fede Diez" && n >= 17 && n <= 32)
+        || (name == "Juanma" && n >= 33 && n <= 48)
+        || (name == "Lucio" && n >= 49 && n <= 64)
+        || (name == "Rama" && n >= 65 && n <= 80)
+        || (name == "Fede Torres" && n >= 81 && n <= 96)
+        || (name == "Aye" && n >= 97 && n <= 112)
+        || (name == "Sofi" && n >= 113 && n <= 128)
+        || (name == "Blas" && n >= 129 && n <= 144);
+    }
+
+    function validPublicTicketCreate() {
+      return request.auth == null
+        && request.resource.data.keys().hasOnly([
+          "number","pokemonId","pokemonName","ownerName","certificateId","assigned",
+          "participantName","source","createdAt","updatedAt"
+        ])
+        && request.resource.data.number is int
+        && request.resource.data.number >= 1
+        && request.resource.data.number <= 144
+        && request.resource.data.pokemonId == request.resource.data.number
+        && request.resource.data.pokemonName is string
+        && request.resource.data.pokemonName.size() > 0
+        && request.resource.data.pokemonName.size() <= 40
+        && request.resource.data.ownerName is string
+        && request.resource.data.ownerName.size() > 0
+        && request.resource.data.ownerName.size() <= 80
+        && request.resource.data.certificateId is string
+        && request.resource.data.certificateId.matches('^[a-f0-9]{48}$')
+        && request.resource.data.assigned == true
+        && request.resource.data.participantName is string
+        && inParticipantBlock(request.resource.data.participantName, request.resource.data.number)
+        && request.resource.data.source == "participant"
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+    }
+
+    function validPublicCertificateCreate() {
+      return request.auth == null
+        && request.resource.data.keys().hasOnly([
+          "raffleNumber","buyerName","pokemonId","pokemonName","status",
+          "participantName","source","updatedAt"
+        ])
+        && request.resource.data.raffleNumber is int
+        && request.resource.data.raffleNumber >= 1
+        && request.resource.data.raffleNumber <= 144
+        && request.resource.data.pokemonId == request.resource.data.raffleNumber
+        && request.resource.data.pokemonName is string
+        && request.resource.data.pokemonName.size() > 0
+        && request.resource.data.pokemonName.size() <= 40
+        && request.resource.data.buyerName is string
+        && request.resource.data.buyerName.size() > 0
+        && request.resource.data.buyerName.size() <= 80
+        && request.resource.data.status == "valid"
+        && request.resource.data.participantName is string
+        && inParticipantBlock(request.resource.data.participantName, request.resource.data.raffleNumber)
+        && request.resource.data.source == "participant"
+        && request.resource.data.updatedAt == request.time;
+    }
+
     match /admins/{uid} {
       allow read: if request.auth != null && request.auth.uid == uid;
       allow write: if false;
     }
 
     match /tickets/{ticketId} {
-      allow read, create, update, delete: if isAdmin();
+      allow get: if true;
+      allow list: if isAdmin();
+      allow create: if isAdmin() || validPublicTicketCreate();
+      allow update, delete: if isAdmin();
     }
 
     match /certificates/{certificateId} {
       allow get: if true;
       allow list: if false;
-      allow create, update, delete: if isAdmin();
+      allow create: if isAdmin() || validPublicCertificateCreate();
+      allow update, delete: if isAdmin();
     }
 
     match /{document=**} {

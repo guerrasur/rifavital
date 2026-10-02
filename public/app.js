@@ -1,23 +1,203 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-import { getFirestore, collection, getDocs, doc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { getFirestore, collection, getDocs, getDoc, doc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { firebaseConfig, ADMIN_UID } from "/firebase-config.js";
 import { pokemonName, pokemonSprite } from "/pokemon.js";
 
 const app=initializeApp(firebaseConfig), auth=getAuth(app), db=getFirestore(app);
 const $=id=>document.getElementById(id), state=new Map();
-const VERSION="1.2.0";
+const VERSION="1.3.0";
 let latestVersion=VERSION;
 const TOTAL=150, DISTRIBUTION_TOTAL=144, DISTRIBUTION_PEOPLE=9, DISTRIBUTION_SIZE=16;
+const PARTICIPANTS=[
+  {name:"Juana",start:1,end:16},
+  {name:"Fede Diez",start:17,end:32},
+  {name:"Juanma",start:33,end:48},
+  {name:"Lucio",start:49,end:64},
+  {name:"Rama",start:65,end:80},
+  {name:"Fede Torres",start:81,end:96},
+  {name:"Aye",start:97,end:112},
+  {name:"Sofi",start:113,end:128},
+  {name:"Blas",start:129,end:144}
+];
+let selectedParticipant=null;
+
 const formatRaffleNumber=n=>String(n).padStart(3,"0");
 const ticketId=n=>formatRaffleNumber(n);
 const makeToken=()=>{const bytes=new Uint8Array(24);crypto.getRandomValues(bytes);return Array.from(bytes,b=>b.toString(16).padStart(2,"0")).join("")};
-const certificateUrl=token=>`${location.origin}/certificado?id=${encodeURIComponent(token)}`;
+const certificateUrl=(token,n)=>`${location.origin}/r/${formatRaffleNumber(n)}?id=${encodeURIComponent(token)}`;
 const setMessage=text=>$("globalMessage").textContent=text||"";
+const setParticipantMessage=text=>$("participantMessage").textContent=text||"";
 
 function escapeHtml(value){return String(value).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;")}
-function downloadText(filename,text,type="text/plain;charset=utf-8"){const blob=new Blob([text],{type}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=filename;a.click();URL.revokeObjectURL(url)}
 function currentFilter(){return $("statusFilter")?.value||"all"}
+function participantForNumber(n){return PARTICIPANTS.find(p=>n>=p.start&&n<=p.end)||null}
+
+function renderParticipantButtons(){
+  const box=$("participantButtons");box.innerHTML="";
+  PARTICIPANTS.forEach(p=>{
+    const button=document.createElement("button");
+    button.type="button";
+    button.className="participant-select";
+    button.innerHTML=`<strong>${escapeHtml(p.name)}</strong><span>${formatRaffleNumber(p.start)}–${formatRaffleNumber(p.end)}</span>`;
+    button.addEventListener("click",()=>openParticipant(p));
+    box.appendChild(button);
+  });
+}
+
+function switchAccessTab(tab){
+  const admin=tab==="admin";
+  $("adminAccessPanel").hidden=!admin;
+  $("participantAccessPanel").hidden=admin;
+  $("adminTabBtn").classList.toggle("active",admin);
+  $("participantsTabBtn").classList.toggle("active",!admin);
+  $("loginMessage").textContent="";
+}
+
+async function openParticipant(participant){
+  selectedParticipant=participant;
+  $("accessView").hidden=true;
+  $("masterView").hidden=true;
+  $("participantView").hidden=false;
+  $("participantTitle").textContent=participant.name;
+  setParticipantMessage("Cargando…");
+  await loadParticipantTickets(participant);
+}
+
+async function loadParticipantTickets(participant){
+  for(let n=participant.start;n<=participant.end;n++)state.delete(n);
+  try{
+    const reads=[];
+    for(let n=participant.start;n<=participant.end;n++)reads.push(getDoc(doc(db,"tickets",ticketId(n))));
+    const snaps=await Promise.all(reads);
+    snaps.forEach((snap,i)=>{if(snap.exists())state.set(participant.start+i,snap.data())});
+    renderParticipantGrid();
+    setParticipantMessage("");
+  }catch(err){
+    console.error(err);
+    setParticipantMessage("No se pudieron cargar las rifas de este participante.");
+  }
+}
+
+function renderParticipantGrid(){
+  if(!selectedParticipant)return;
+  const box=$("participantGrid");box.innerHTML="";
+  let assigned=0;
+  for(let n=selectedParticipant.start;n<=selectedParticipant.end;n++){
+    const data=state.get(n)||{},isAssigned=Boolean(data.ownerName);
+    if(isAssigned)assigned++;
+    const card=document.createElement("article");
+    card.className=`participant-card ${isAssigned?"is-assigned":""}`;
+    card.innerHTML=`
+      <div class="participant-card-head">
+        <strong>#${formatRaffleNumber(n)}</strong>
+        <span class="participant-status">${isAssigned?"Asignado":"Libre"}</span>
+      </div>
+      <img src="${pokemonSprite(n)}" alt="${escapeHtml(pokemonName(n))}" loading="lazy">
+      <h2>${escapeHtml(pokemonName(n))}</h2>
+      ${isAssigned
+        ? `<p class="participant-owner">Asignado a <strong>${escapeHtml(data.ownerName)}</strong></p>`
+        : `<div class="participant-assign"><input type="text" maxlength="80" placeholder="Nombre comprador" aria-label="Nombre comprador para rifa ${formatRaffleNumber(n)}"><button type="button">Asignar</button></div>`
+      }`;
+    if(!isAssigned){
+      const input=card.querySelector("input"),button=card.querySelector("button");
+      const submit=()=>assignParticipantTicket(n,input.value.trim(),card);
+      button.addEventListener("click",submit);
+      input.addEventListener("keydown",e=>{if(e.key==="Enter")submit()});
+    }
+    box.appendChild(card);
+  }
+  $("participantAssignedCount").textContent=assigned;
+}
+
+async function assignParticipantTicket(n,ownerName,card){
+  if(!selectedParticipant||n<selectedParticipant.start||n>selectedParticipant.end)return;
+  if(!ownerName){setParticipantMessage("Escribí el nombre del comprador.");return}
+  card.classList.add("saving");setParticipantMessage("");
+  try{
+    const ref=doc(db,"tickets",ticketId(n)),fresh=await getDoc(ref);
+    if(fresh.exists()&&fresh.data().ownerName){
+      state.set(n,fresh.data());renderParticipantGrid();setParticipantMessage(`La rifa #${formatRaffleNumber(n)} ya estaba asignada.`);return;
+    }
+    const certificateId=makeToken(),batch=writeBatch(db),participantName=selectedParticipant.name;
+    const base={
+      number:n,pokemonId:n,pokemonName:pokemonName(n),ownerName,certificateId,assigned:true,
+      participantName,source:"participant",createdAt:serverTimestamp(),updatedAt:serverTimestamp()
+    };
+    batch.set(ref,base);
+    batch.set(doc(db,"certificates",certificateId),{
+      raffleNumber:n,buyerName:ownerName,pokemonId:n,pokemonName:pokemonName(n),status:"valid",
+      participantName,source:"participant",updatedAt:serverTimestamp()
+    });
+    await batch.commit();
+    state.set(n,{...base,createdAt:new Date(),updatedAt:new Date()});
+    renderParticipantGrid();
+    setParticipantMessage(`Rifa #${formatRaffleNumber(n)} asignada a ${ownerName}.`);
+  }catch(err){
+    console.error(err);
+    card.classList.remove("saving");
+    setParticipantMessage("No se pudo asignar. Puede que otra persona haya tomado esa rifa al mismo tiempo.");
+  }
+}
+
+function loadCanvasImage(src){
+  return new Promise(resolve=>{
+    const img=new Image();
+    img.crossOrigin="anonymous";
+    img.onload=()=>resolve(img);
+    img.onerror=()=>resolve(null);
+    img.src=src;
+  });
+}
+
+async function exportParticipantImage(){
+  if(!selectedParticipant)return;
+  const button=$("exportParticipantImageBtn");
+  const original=button.textContent;button.disabled=true;button.textContent="Generando…";
+  try{
+    const numbers=Array.from({length:16},(_,i)=>selectedParticipant.start+i);
+    const images=await Promise.all(numbers.map(n=>loadCanvasImage(pokemonSprite(n))));
+    const canvas=document.createElement("canvas"),ctx=canvas.getContext("2d");
+    const width=1400,margin=60,gap=22,cols=4,header=180,cardW=(width-margin*2-gap*(cols-1))/cols,cardH=310,rows=4,height=header+rows*cardH+(rows-1)*gap+90;
+    canvas.width=width;canvas.height=height;
+    ctx.fillStyle="#ffffff";ctx.fillRect(0,0,width,height);
+    ctx.fillStyle="#000000";ctx.font="700 54px Arial";ctx.textAlign="left";ctx.fillText("Rifa “Fiebre de otoño”",margin,72);
+    ctx.font="700 38px Arial";ctx.fillText(selectedParticipant.name,margin,126);
+    const assignedCount=numbers.filter(n=>state.get(n)?.ownerName).length;
+    ctx.font="400 25px Arial";ctx.fillStyle="#555555";ctx.fillText(`${assignedCount}/16 asignados`,margin,160);
+
+    numbers.forEach((n,i)=>{
+      const col=i%cols,row=Math.floor(i/cols),x=margin+col*(cardW+gap),y=header+row*(cardH+gap),data=state.get(n)||{},assigned=Boolean(data.ownerName);
+      ctx.fillStyle="#ffffff";ctx.fillRect(x,y,cardW,cardH);
+      ctx.strokeStyle="#cfcfcf";ctx.lineWidth=2;ctx.strokeRect(x,y,cardW,cardH);
+      ctx.fillStyle="#000000";ctx.textAlign="left";ctx.font="700 30px Arial";ctx.fillText(`#${formatRaffleNumber(n)}`,x+20,y+40);
+      ctx.textAlign="right";ctx.font="700 18px Arial";ctx.fillStyle=assigned?"#b00020":"#666666";ctx.fillText(assigned?"ASIGNADO":"LIBRE",x+cardW-20,y+38);
+      const img=images[i],imgSize=145,imgX=x+(cardW-imgSize)/2,imgY=y+62;
+      if(img)ctx.drawImage(img,imgX,imgY,imgSize,imgSize);
+      ctx.textAlign="center";ctx.fillStyle="#000000";ctx.font="700 22px Arial";ctx.fillText(pokemonName(n),x+cardW/2,y+235);
+      ctx.font="400 16px Arial";ctx.fillStyle="#555555";
+      const owner=(data.ownerName||"").slice(0,24);
+      if(owner)ctx.fillText(owner,x+cardW/2,y+270);
+      if(assigned){
+        ctx.strokeStyle="#d40000";ctx.lineWidth=11;ctx.lineCap="round";
+        ctx.beginPath();ctx.moveTo(imgX-8,imgY+10);ctx.lineTo(imgX+imgSize+8,imgY+imgSize-10);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(imgX+imgSize+8,imgY+10);ctx.lineTo(imgX-8,imgY+imgSize-10);ctx.stroke();
+      }
+    });
+
+    ctx.textAlign="left";ctx.fillStyle="#777777";ctx.font="400 18px Arial";ctx.fillText("Generado desde fiebredeotono.web.app",margin,height-38);
+    const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/png"));
+    if(!blob)throw new Error("No se pudo generar la imagen");
+    const url=URL.createObjectURL(blob),a=document.createElement("a");
+    const slug=selectedParticipant.name.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+    a.href=url;a.download=`fiebre-de-otono-${slug}.png`;a.click();URL.revokeObjectURL(url);
+    setParticipantMessage("Imagen exportada.");
+  }catch(err){
+    console.error(err);setParticipantMessage("No se pudo exportar la imagen.");
+  }finally{
+    button.disabled=false;button.textContent=original;
+  }
+}
 
 function renderRows(){
   const tbody=$("raffleRows");tbody.innerHTML="";
@@ -71,12 +251,13 @@ async function handleAction(n,action,tr){
     await clearTicket(n,current,tr);return;
   }
   if(!current.certificateId)return;
-  const url=certificateUrl(current.certificateId);
+  const url=certificateUrl(current.certificateId,n);
   if(action==="open")window.open(url,"_blank","noopener");
   if(action==="copy"){await navigator.clipboard.writeText(url);setMessage(`Link de la rifa #${formatRaffleNumber(n)} copiado.`)}
   if(action==="share"){
-    const text=`Rifa #${formatRaffleNumber(n)} — ${current.ownerName||""}\n${url}`;
-    if(navigator.share){try{await navigator.share({title:`Rifa #${formatRaffleNumber(n)}`,text,url});}catch{}}
+    const title=`Rifa “Fiebre de otoño”: NRO ${formatRaffleNumber(n)}`;
+    const text=`${title} — ${current.ownerName||""}\n${url}`;
+    if(navigator.share){try{await navigator.share({title,text,url});}catch{}}
     else window.open(`https://wa.me/?text=${encodeURIComponent(text)}`,"_blank","noopener");
   }
   if(action==="qr")openQr(n,url);
@@ -86,9 +267,10 @@ async function saveTicket(n,ownerName,current,tr){
   tr.classList.add("saving");setMessage("");
   try{
     const certificateId=current.certificateId||makeToken(),batch=writeBatch(db);
-    const base={number:n,pokemonId:n,pokemonName:pokemonName(n),ownerName,certificateId,assigned:true,updatedAt:serverTimestamp()};
+    const participantName=participantForNumber(n)?.name||current.participantName||"";
+    const base={number:n,pokemonId:n,pokemonName:pokemonName(n),ownerName,certificateId,assigned:true,updatedAt:serverTimestamp(),participantName,source:current.source||"admin"};
     batch.set(doc(db,"tickets",ticketId(n)),{...base,createdAt:current.createdAt||serverTimestamp()},{merge:true});
-    batch.set(doc(db,"certificates",certificateId),{raffleNumber:n,buyerName:ownerName,pokemonId:n,pokemonName:pokemonName(n),status:"valid",updatedAt:serverTimestamp()},{merge:true});
+    batch.set(doc(db,"certificates",certificateId),{raffleNumber:n,buyerName:ownerName,pokemonId:n,pokemonName:pokemonName(n),status:"valid",updatedAt:serverTimestamp(),participantName,source:current.source||"admin"},{merge:true});
     await batch.commit();
     state.set(n,{...current,...base,certificateId});
     renderRows();setMessage(`Rifa #${formatRaffleNumber(n)} guardada para ${ownerName}.`);
@@ -127,19 +309,20 @@ function ticketRows(){
     return {
       "Número":formatRaffleNumber(n),
       "Pokémon":pokemonName(n),
+      "Participante":participantForNumber(n)?.name||"",
       "Estado":d.ownerName?"Asignada":"Libre",
       "Titular":d.ownerName||"",
       "Certificado":d.certificateId||"",
-      "Link":d.certificateId?certificateUrl(d.certificateId):""
+      "Link":d.certificateId?certificateUrl(d.certificateId,n):""
     };
   });
 }
 
-function distributionRows(names=[]){
+function distributionRows(names=PARTICIPANTS.map(p=>p.name)){
   return Array.from({length:DISTRIBUTION_PEOPLE},(_,i)=>{
     const start=i*DISTRIBUTION_SIZE+1,end=start+DISTRIBUTION_SIZE-1;
     let assigned=0;for(let n=start;n<=end;n++)if(state.get(n)?.ownerName)assigned++;
-    return {"Persona":names[i]||`Persona ${i+1}`,"Desde":formatRaffleNumber(start),"Hasta":formatRaffleNumber(end),"Cantidad":DISTRIBUTION_SIZE,"Asignadas":assigned,"Libres":DISTRIBUTION_SIZE-assigned};
+    return {"Persona":names[i]||PARTICIPANTS[i].name,"Desde":formatRaffleNumber(start),"Hasta":formatRaffleNumber(end),"Cantidad":DISTRIBUTION_SIZE,"Asignadas":assigned,"Libres":DISTRIBUTION_SIZE-assigned};
   });
 }
 
@@ -150,8 +333,12 @@ function exportExcel(){
   xlsx.utils.book_append_sheet(wb,xlsx.utils.json_to_sheet(assigned),"Asignadas");
   xlsx.utils.book_append_sheet(wb,xlsx.utils.json_to_sheet(free),"Libres");
   xlsx.utils.book_append_sheet(wb,xlsx.utils.json_to_sheet(distributionRows()),"Reparto 9x16");
+  PARTICIPANTS.forEach(p=>{
+    const rows=all.filter(r=>Number(r["Número"])>=p.start&&Number(r["Número"])<=p.end);
+    xlsx.utils.book_append_sheet(wb,xlsx.utils.json_to_sheet(rows),p.name.slice(0,31));
+  });
   xlsx.writeFile(wb,`fiebre-de-otono-rifas-${new Date().toISOString().slice(0,10)}.xlsx`);
-  setMessage("Excel exportado: todas, asignadas, libres y reparto 9×16.");
+  setMessage("Excel exportado: resumen general y una pestaña por participante.");
 }
 
 async function copyList(type){
@@ -175,15 +362,15 @@ function randomFree(){
 
 function openDistribution(){
   const box=$("distributionNames");box.innerHTML="";
-  for(let i=0;i<DISTRIBUTION_PEOPLE;i++){
-    const input=document.createElement("input");input.value=`Persona ${i+1}`;input.dataset.index=String(i);box.appendChild(input);
-  }
+  PARTICIPANTS.forEach((p,i)=>{
+    const input=document.createElement("input");input.value=p.name;input.dataset.index=String(i);box.appendChild(input);
+  });
   refreshDistributionPreview();$("distributionDialog").showModal();
 }
-function distributionNames(){return Array.from($("distributionNames").querySelectorAll("input")).map(i=>i.value.trim()||`Persona ${Number(i.dataset.index)+1}`)}
+function distributionNames(){return Array.from($("distributionNames").querySelectorAll("input")).map((input,i)=>input.value.trim()||PARTICIPANTS[i].name)}
 function refreshDistributionPreview(){
   const rows=distributionRows(distributionNames());
-  $("distributionPreview").textContent=rows.map(r=>`${r.Persona}: ${r.Desde} al ${r.Hasta} · ${r.Asignadas} asignadas · ${r.Libres} libres`).join("\n")+`\n\nQuedan ${formatRaffleNumber(DISTRIBUTION_TOTAL+1)} al ${formatRaffleNumber(TOTAL)} fuera del reparto.`;
+  $("distributionPreview").textContent=rows.map(r=>`${r.Persona}: ${r.Desde} al ${r.Hasta} · ${r.Asignadas} asignadas · ${r.Libres} libres`).join("\n")+ `\n\nQuedan ${formatRaffleNumber(DISTRIBUTION_TOTAL+1)} al ${formatRaffleNumber(TOTAL)} fuera del reparto.`;
 }
 async function copyDistribution(){refreshDistributionPreview();await navigator.clipboard.writeText($("distributionPreview").textContent);setMessage("Reparto 9×16 copiado.");$("distributionDialog").close()}
 
@@ -215,17 +402,16 @@ async function applyBulk(){
   try{
     const batch=writeBatch(db),next=[];
     for(const {n,ownerName} of entries){
-      const current=state.get(n)||{},certificateId=current.certificateId||makeToken();
-      const base={number:n,pokemonId:n,pokemonName:pokemonName(n),ownerName,certificateId,assigned:true,updatedAt:serverTimestamp()};
+      const current=state.get(n)||{},certificateId=current.certificateId||makeToken(),participantName=participantForNumber(n)?.name||"";
+      const base={number:n,pokemonId:n,pokemonName:pokemonName(n),ownerName,certificateId,assigned:true,updatedAt:serverTimestamp(),participantName,source:current.source||"admin"};
       batch.set(doc(db,"tickets",ticketId(n)),{...base,createdAt:current.createdAt||serverTimestamp()},{merge:true});
-      batch.set(doc(db,"certificates",certificateId),{raffleNumber:n,buyerName:ownerName,pokemonId:n,pokemonName:pokemonName(n),status:"valid",updatedAt:serverTimestamp()},{merge:true});
+      batch.set(doc(db,"certificates",certificateId),{raffleNumber:n,buyerName:ownerName,pokemonId:n,pokemonName:pokemonName(n),status:"valid",updatedAt:serverTimestamp(),participantName,source:current.source||"admin"},{merge:true});
       next.push([n,{...current,...base,certificateId}]);
     }
     await batch.commit();next.forEach(([n,d])=>state.set(n,d));renderRows();$("bulkInput").value="";previewBulk();$("bulkDialog").close();
     setMessage(`Carga rápida completa: ${entries.length} rifas guardadas.`);
   }catch(err){console.error(err);setMessage("No se pudo completar la carga rápida.");$("applyBulkBtn").disabled=false}
 }
-
 
 async function checkForUpdate(){
   const label=$("versionLabel"),button=$("updateBtn");
@@ -236,12 +422,8 @@ async function checkForUpdate(){
     const data=await response.json();
     latestVersion=String(data.version||VERSION);
     if(button){
-      if(latestVersion!==VERSION){
-        button.textContent=`Actualizar a v${latestVersion}`;
-        button.hidden=false;
-      }else{
-        button.hidden=true;
-      }
+      if(latestVersion!==VERSION){button.textContent=`Actualizar a v${latestVersion}`;button.hidden=false}
+      else button.hidden=true;
     }
   }catch(err){console.debug("No se pudo comprobar la versión.",err)}
 }
@@ -265,6 +447,10 @@ async function installLatestVersion(){
   location.replace(url.toString());
 }
 
+$("adminTabBtn").addEventListener("click",()=>switchAccessTab("admin"));
+$("participantsTabBtn").addEventListener("click",()=>switchAccessTab("participants"));
+$("backParticipantBtn").addEventListener("click",()=>{selectedParticipant=null;$("participantView").hidden=true;$("accessView").hidden=false;switchAccessTab("participants")});
+$("exportParticipantImageBtn").addEventListener("click",exportParticipantImage);
 $("loginBtn").addEventListener("click",async()=>{ $("loginMessage").textContent=""; try{await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value)}catch(err){console.error(err);$("loginMessage").textContent="Email o contraseña incorrectos."}});
 $("password").addEventListener("keydown",e=>{if(e.key==="Enter")$("loginBtn").click()});
 $("logoutBtn").addEventListener("click",()=>signOut(auth));
@@ -291,11 +477,16 @@ $("downloadQrBtn").addEventListener("click",()=>{const canvas=$("qrBox").querySe
 window.addEventListener("focus",checkForUpdate);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)checkForUpdate()});
 setInterval(checkForUpdate,60000);
+renderParticipantButtons();
 checkForUpdate();
 
 onAuthStateChanged(auth,async user=>{
-  if(!user){$("loginView").hidden=false;$("masterView").hidden=true;return}
+  if(!user){
+    $("masterView").hidden=true;
+    if(!selectedParticipant)$("accessView").hidden=false;
+    return;
+  }
   if(user.uid!==ADMIN_UID){$("loginMessage").textContent="Esta cuenta no está autorizada.";await signOut(auth);return}
-  $("loginView").hidden=true;$("masterView").hidden=false;
+  selectedParticipant=null;$("accessView").hidden=true;$("participantView").hidden=true;$("masterView").hidden=false;
   try{await loadTickets()}catch(err){console.error(err);setMessage("Conectado, pero Firestore todavía no permite leer la tabla. Falta desplegar las reglas.")}
 });

@@ -4,28 +4,56 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#ffffff">
-  <title>RifaVital — Maestro</title>
-  <link rel="stylesheet" href="/styles.css?v=1.2.0">
+  <title>Rifa “Fiebre de otoño” — Administración</title>
+  <link rel="stylesheet" href="/styles.css?v=1.3.0">
 </head>
 <body class="admin-page">
   <div class="version-tools" aria-live="polite">
-    <span id="versionLabel">v1.2.0</span>
+    <span id="versionLabel">v1.3.0</span>
     <button id="updateBtn" type="button" hidden>Actualizar</button>
   </div>
+
   <main class="admin-shell">
-    <section id="loginView" class="login-card">
-      <h1>RifaVital</h1>
-      <p>Administración maestra</p>
-      <label>Email<input id="email" type="email" autocomplete="email"></label>
-      <label>Contraseña<input id="password" type="password" autocomplete="current-password"></label>
-      <button id="loginBtn">Ingresar</button>
-      <p id="loginMessage" class="message"></p>
+    <section id="accessView" class="login-card access-card">
+      <h1>Fiebre de otoño</h1>
+      <p>Rifas 001–150</p>
+
+      <div class="access-tabs" role="tablist" aria-label="Acceso">
+        <button id="adminTabBtn" class="access-tab active" type="button">Admin</button>
+        <button id="participantsTabBtn" class="access-tab" type="button">Participantes</button>
+      </div>
+
+      <div id="adminAccessPanel">
+        <label>Email<input id="email" type="email" autocomplete="email"></label>
+        <label>Contraseña<input id="password" type="password" autocomplete="current-password"></label>
+        <button id="loginBtn">Ingresar</button>
+        <p id="loginMessage" class="message"></p>
+      </div>
+
+      <div id="participantAccessPanel" hidden>
+        <p class="participant-intro">Elegí tu nombre. No requiere inicio de sesión.</p>
+        <div id="participantButtons" class="participant-buttons"></div>
+      </div>
+    </section>
+
+    <section id="participantView" hidden>
+      <header class="master-header participant-header">
+        <div>
+          <button id="backParticipantBtn" class="text-button" type="button">← Volver</button>
+          <h1 id="participantTitle">Participante</h1>
+          <p><strong id="participantAssignedCount">0</strong>/16 asignados</p>
+        </div>
+        <button id="exportParticipantImageBtn" class="button-light" type="button">Exportar imagen</button>
+      </header>
+      <p class="participant-help">Asigná cada Pokémon escribiendo el nombre del comprador. Los ya asignados quedan bloqueados y los puede editar o liberar el administrador.</p>
+      <div id="participantGrid" class="participant-grid"></div>
+      <p id="participantMessage" class="message sticky-message"></p>
     </section>
 
     <section id="masterView" hidden>
       <header class="master-header">
         <div>
-          <h1>RifaVital</h1>
+          <h1>Fiebre de otoño</h1>
           <p><strong id="assignedCount">0</strong> asignadas · <strong id="freeCount">150</strong> libres · <strong id="progressCount">0%</strong> ocupación</p>
         </div>
         <button id="logoutBtn" class="button-light">Salir</button>
@@ -103,6 +131,6 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script type="module" src="/app.js?v=1.2.0"></script>
+  <script type="module" src="/app.js?v=1.3.0"></script>
 </body>
 </html>

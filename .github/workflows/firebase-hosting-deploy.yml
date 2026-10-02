@@ -6,6 +6,7 @@ on:
     paths:
       - "public/**"
       - "firebase.json"
+      - "firestore.rules"
       - ".firebaserc"
       - ".github/workflows/firebase-hosting-deploy.yml"
   workflow_dispatch:
@@ -23,7 +24,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Deploy live site
+      - name: Deploy live site and Firestore rules
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_RIFAVITAL }}
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
@@ -33,9 +34,9 @@ jobs:
           if [ -n "${FIREBASE_SERVICE_ACCOUNT:-}" ]; then
             printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-service-account.json"
             export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-service-account.json"
-            npx --yes firebase-tools@latest deploy --only hosting --project rifavital --non-interactive
+            npx --yes firebase-tools@latest deploy --only hosting,firestore:rules --project rifavital --non-interactive
           elif [ -n "${FIREBASE_TOKEN:-}" ]; then
-            npx --yes firebase-tools@latest deploy --only hosting --project rifavital --token "$FIREBASE_TOKEN" --non-interactive
+            npx --yes firebase-tools@latest deploy --only hosting,firestore:rules --project rifavital --token "$FIREBASE_TOKEN" --non-interactive
           else
             echo "::error::Falta configurar FIREBASE_SERVICE_ACCOUNT_RIFAVITAL o FIREBASE_TOKEN en los secrets del repo."
             exit 1
