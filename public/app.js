@@ -136,7 +136,8 @@ function ticketRows(){
 function distributionRows(names=[]){
   return Array.from({length:DISTRIBUTION_PEOPLE},(_,i)=>{
     const start=i*DISTRIBUTION_SIZE+1,end=start+DISTRIBUTION_SIZE-1;
-    return {"Persona":names[i]||`Persona ${i+1}`,"Desde":formatRaffleNumber(start),"Hasta":formatRaffleNumber(end),"Cantidad":DISTRIBUTION_SIZE};
+    let assigned=0;for(let n=start;n<=end;n++)if(state.get(n)?.ownerName)assigned++;
+    return {"Persona":names[i]||`Persona ${i+1}`,"Desde":formatRaffleNumber(start),"Hasta":formatRaffleNumber(end),"Cantidad":DISTRIBUTION_SIZE,"Asignadas":assigned,"Libres":DISTRIBUTION_SIZE-assigned};
   });
 }
 
@@ -180,7 +181,7 @@ function openDistribution(){
 function distributionNames(){return Array.from($("distributionNames").querySelectorAll("input")).map(i=>i.value.trim()||`Persona ${Number(i.dataset.index)+1}`)}
 function refreshDistributionPreview(){
   const rows=distributionRows(distributionNames());
-  $("distributionPreview").textContent=rows.map(r=>`${r.Persona}: ${r.Desde} al ${r.Hasta}`).join("\n")+`\n\nQuedan ${formatRaffleNumber(DISTRIBUTION_TOTAL+1)} al ${formatRaffleNumber(TOTAL)} fuera del reparto.`;
+  $("distributionPreview").textContent=rows.map(r=>`${r.Persona}: ${r.Desde} al ${r.Hasta} · ${r.Asignadas} asignadas · ${r.Libres} libres`).join("\n")+`\n\nQuedan ${formatRaffleNumber(DISTRIBUTION_TOTAL+1)} al ${formatRaffleNumber(TOTAL)} fuera del reparto.`;
 }
 async function copyDistribution(){refreshDistributionPreview();await navigator.clipboard.writeText($("distributionPreview").textContent);setMessage("Reparto 9×16 copiado.");$("distributionDialog").close()}
 
