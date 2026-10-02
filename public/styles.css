@@ -47,6 +47,10 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .participant-card>img{display:block;width:112px;height:112px;object-fit:contain;image-rendering:pixelated;margin:6px auto}
 .participant-card h2{font-size:17px;text-align:center;margin:0 0 12px}
 .participant-owner{text-align:center;font-size:13px;margin:12px 0 2px;overflow-wrap:anywhere}
+.participant-assigned-info{min-width:0}
+.participant-ticket-link{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;align-items:center;margin-top:8px}
+.participant-ticket-link a{display:block;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px;color:#000;text-decoration:underline}
+.participant-ticket-link button{border:1px solid #000;background:#fff;color:#000;padding:6px 8px;font-size:11px;font-weight:700}
 .participant-assign{display:grid;grid-template-columns:1fr;gap:7px}
 .participant-assign input{width:100%;border:1px solid #bbb;padding:9px;min-width:0}
 .participant-assign button{padding:8px}
@@ -114,8 +118,9 @@ dialog::backdrop{background:rgba(0,0,0,.42)}
   .participant-card-head{grid-area:head}
   .participant-card>img{grid-area:image;width:90px;height:90px;margin:5px auto}
   .participant-card h2{grid-area:title;text-align:left;margin:10px 0 0;align-self:end}
-  .participant-card .participant-owner,.participant-card .participant-assign{grid-area:action;align-self:start}
+  .participant-card .participant-assigned-info,.participant-card .participant-assign{grid-area:action;align-self:start;min-width:0}
   .participant-card .participant-owner{text-align:left;margin:4px 0}
+  .participant-ticket-link{margin-top:6px}
 }
 
 .gate-card{width:min(360px,100%)}
