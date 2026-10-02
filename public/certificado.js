@@ -3,7 +3,7 @@ import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10
 import { firebaseConfig } from "/firebase-config.js";
 import { pokemonSprite } from "/pokemon.js";
 
-const VERSION="1.3.0";
+const VERSION="1.4.0";
 const app=initializeApp(firebaseConfig),db=getFirestore(app),$=id=>document.getElementById(id);
 const formatRaffleNumber=n=>String(n).padStart(3,"0");
 function invalid(){$("loadingState").hidden=true;$("certificate").hidden=true;$("invalidState").hidden=false}
