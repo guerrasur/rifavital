@@ -5,16 +5,22 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#ffffff">
   <title>Rifa “Fiebre de otoño” — Administración</title>
-  <link rel="stylesheet" href="/styles.css?v=1.3.0">
+  <link rel="stylesheet" href="/styles.css?v=1.4.0">
 </head>
 <body class="admin-page">
   <div class="version-tools" aria-live="polite">
-    <span id="versionLabel">v1.3.0</span>
+    <span id="versionLabel">v1.4.0</span>
     <button id="updateBtn" type="button" hidden>Actualizar</button>
   </div>
 
   <main class="admin-shell">
-    <section id="accessView" class="login-card access-card">
+    <section id="gateView" class="login-card gate-card">
+      <label>Contraseña<input id="gatePassword" type="password" autocomplete="current-password" autofocus></label>
+      <button id="gateLoginBtn" type="button">Ingresar</button>
+      <p id="gateMessage" class="message"></p>
+    </section>
+
+    <section id="accessView" class="login-card access-card" hidden>
       <h1>Fiebre de otoño</h1>
       <p>Rifas 001–150</p>
 
@@ -43,7 +49,11 @@
           <h1 id="participantTitle">Participante</h1>
           <p><strong id="participantAssignedCount">0</strong>/16 asignados</p>
         </div>
-        <button id="exportParticipantImageBtn" class="button-light" type="button">Exportar imagen</button>
+        <div class="participant-image-actions" aria-label="Imagen de rifas">
+          <button id="downloadParticipantImageBtn" class="button-light" type="button">Descargar imagen</button>
+          <button id="copyParticipantImageBtn" class="button-light" type="button">Copiar imagen</button>
+          <button id="shareParticipantImageBtn" class="button-light" type="button">Compartir imagen</button>
+        </div>
       </header>
       <p class="participant-help">Asigná cada Pokémon escribiendo el nombre del comprador. Los ya asignados quedan bloqueados y los puede editar o liberar el administrador.</p>
       <div id="participantGrid" class="participant-grid"></div>
@@ -131,6 +141,6 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script type="module" src="/app.js?v=1.3.0"></script>
+  <script type="module" src="/app.js?v=1.4.0"></script>
 </body>
 </html>
