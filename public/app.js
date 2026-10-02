@@ -6,7 +6,7 @@ import { pokemonName, pokemonSprite } from "/pokemon.js";
 
 const app=initializeApp(firebaseConfig), auth=getAuth(app), db=getFirestore(app);
 const $=id=>document.getElementById(id), state=new Map();
-const VERSION="1.3.0";
+const VERSION="1.4.0";
 let latestVersion=VERSION;
 const TOTAL=150, DISTRIBUTION_TOTAL=144, DISTRIBUTION_PEOPLE=9, DISTRIBUTION_SIZE=16;
 const PARTICIPANTS=[
@@ -21,6 +21,8 @@ const PARTICIPANTS=[
   {name:"Blas",start:129,end:144}
 ];
 let selectedParticipant=null;
+const GATE_PASSWORD="cortoidac";
+const GATE_SESSION_KEY="fiebre_gate_ok";
 
 const formatRaffleNumber=n=>String(n).padStart(3,"0");
 const ticketId=n=>formatRaffleNumber(n);
@@ -52,6 +54,27 @@ function switchAccessTab(tab){
   $("adminTabBtn").classList.toggle("active",admin);
   $("participantsTabBtn").classList.toggle("active",!admin);
   $("loginMessage").textContent="";
+}
+
+function gateIsOpen(){
+  return sessionStorage.getItem(GATE_SESSION_KEY)==="1";
+}
+
+function showAccessAfterGate(){
+  $("gateView").hidden=true;
+  if(!auth.currentUser&&!selectedParticipant)$("accessView").hidden=false;
+}
+
+function unlockGate(){
+  const value=$("gatePassword").value;
+  if(value!==GATE_PASSWORD){
+    $("gateMessage").textContent="Contraseña incorrecta.";
+    $("gatePassword").select();
+    return;
+  }
+  sessionStorage.setItem(GATE_SESSION_KEY,"1");
+  $("gateMessage").textContent="";
+  showAccessAfterGate();
 }
 
 async function openParticipant(participant){
@@ -150,53 +173,84 @@ function loadCanvasImage(src){
   });
 }
 
-async function exportParticipantImage(){
-  if(!selectedParticipant)return;
-  const button=$("exportParticipantImageBtn");
-  const original=button.textContent;button.disabled=true;button.textContent="Generando…";
+async function generateParticipantImageBlob(){
+  if(!selectedParticipant)throw new Error("No hay participante seleccionado.");
+  const numbers=Array.from({length:16},(_,i)=>selectedParticipant.start+i);
+  const images=await Promise.all(numbers.map(n=>loadCanvasImage(pokemonSprite(n))));
+  const canvas=document.createElement("canvas"),ctx=canvas.getContext("2d");
+  const width=1400,margin=60,gap=22,cols=4,header=180,cardW=(width-margin*2-gap*(cols-1))/cols,cardH=285,rows=4,height=header+rows*cardH+(rows-1)*gap+90;
+  canvas.width=width;canvas.height=height;
+  ctx.fillStyle="#ffffff";ctx.fillRect(0,0,width,height);
+  ctx.fillStyle="#000000";ctx.font="700 54px Arial";ctx.textAlign="left";ctx.fillText("Rifa “Fiebre de otoño”",margin,72);
+  ctx.font="700 38px Arial";ctx.fillText(selectedParticipant.name,margin,126);
+  const assignedCount=numbers.filter(n=>state.get(n)?.ownerName).length;
+  ctx.font="400 25px Arial";ctx.fillStyle="#555555";ctx.fillText(`${assignedCount}/16 asignados`,margin,160);
+
+  numbers.forEach((n,i)=>{
+    const col=i%cols,row=Math.floor(i/cols),x=margin+col*(cardW+gap),y=header+row*(cardH+gap),data=state.get(n)||{},assigned=Boolean(data.ownerName);
+    ctx.fillStyle="#ffffff";ctx.fillRect(x,y,cardW,cardH);
+    ctx.strokeStyle="#cfcfcf";ctx.lineWidth=2;ctx.strokeRect(x,y,cardW,cardH);
+    ctx.fillStyle="#000000";ctx.textAlign="left";ctx.font="700 30px Arial";ctx.fillText(`#${formatRaffleNumber(n)}`,x+20,y+40);
+    ctx.textAlign="right";ctx.font="700 18px Arial";ctx.fillStyle=assigned?"#b00020":"#666666";ctx.fillText(assigned?"ASIGNADO":"LIBRE",x+cardW-20,y+38);
+    const img=images[i],imgSize=145,imgX=x+(cardW-imgSize)/2,imgY=y+62;
+    if(img)ctx.drawImage(img,imgX,imgY,imgSize,imgSize);
+    ctx.textAlign="center";ctx.fillStyle="#000000";ctx.font="700 22px Arial";ctx.fillText(pokemonName(n),x+cardW/2,y+242);
+    if(assigned){
+      ctx.strokeStyle="#d40000";ctx.lineWidth=11;ctx.lineCap="round";
+      ctx.beginPath();ctx.moveTo(imgX-8,imgY+10);ctx.lineTo(imgX+imgSize+8,imgY+imgSize-10);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(imgX+imgSize+8,imgY+10);ctx.lineTo(imgX-8,imgY+imgSize-10);ctx.stroke();
+    }
+  });
+
+  ctx.textAlign="left";ctx.fillStyle="#777777";ctx.font="400 18px Arial";ctx.fillText("Fiebre Producciones © 2026",margin,height-38);
+  const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/png"));
+  if(!blob)throw new Error("No se pudo generar la imagen");
+  return blob;
+}
+
+function participantImageFilename(){
+  const slug=selectedParticipant.name.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+  return `fiebre-de-otono-${slug}.png`;
+}
+
+async function withParticipantImageAction(buttonId,workingText,action){
+  const button=$(buttonId),original=button.textContent;
+  button.disabled=true;button.textContent=workingText;setParticipantMessage("");
   try{
-    const numbers=Array.from({length:16},(_,i)=>selectedParticipant.start+i);
-    const images=await Promise.all(numbers.map(n=>loadCanvasImage(pokemonSprite(n))));
-    const canvas=document.createElement("canvas"),ctx=canvas.getContext("2d");
-    const width=1400,margin=60,gap=22,cols=4,header=180,cardW=(width-margin*2-gap*(cols-1))/cols,cardH=310,rows=4,height=header+rows*cardH+(rows-1)*gap+90;
-    canvas.width=width;canvas.height=height;
-    ctx.fillStyle="#ffffff";ctx.fillRect(0,0,width,height);
-    ctx.fillStyle="#000000";ctx.font="700 54px Arial";ctx.textAlign="left";ctx.fillText("Rifa “Fiebre de otoño”",margin,72);
-    ctx.font="700 38px Arial";ctx.fillText(selectedParticipant.name,margin,126);
-    const assignedCount=numbers.filter(n=>state.get(n)?.ownerName).length;
-    ctx.font="400 25px Arial";ctx.fillStyle="#555555";ctx.fillText(`${assignedCount}/16 asignados`,margin,160);
-
-    numbers.forEach((n,i)=>{
-      const col=i%cols,row=Math.floor(i/cols),x=margin+col*(cardW+gap),y=header+row*(cardH+gap),data=state.get(n)||{},assigned=Boolean(data.ownerName);
-      ctx.fillStyle="#ffffff";ctx.fillRect(x,y,cardW,cardH);
-      ctx.strokeStyle="#cfcfcf";ctx.lineWidth=2;ctx.strokeRect(x,y,cardW,cardH);
-      ctx.fillStyle="#000000";ctx.textAlign="left";ctx.font="700 30px Arial";ctx.fillText(`#${formatRaffleNumber(n)}`,x+20,y+40);
-      ctx.textAlign="right";ctx.font="700 18px Arial";ctx.fillStyle=assigned?"#b00020":"#666666";ctx.fillText(assigned?"ASIGNADO":"LIBRE",x+cardW-20,y+38);
-      const img=images[i],imgSize=145,imgX=x+(cardW-imgSize)/2,imgY=y+62;
-      if(img)ctx.drawImage(img,imgX,imgY,imgSize,imgSize);
-      ctx.textAlign="center";ctx.fillStyle="#000000";ctx.font="700 22px Arial";ctx.fillText(pokemonName(n),x+cardW/2,y+235);
-      ctx.font="400 16px Arial";ctx.fillStyle="#555555";
-      const owner=(data.ownerName||"").slice(0,24);
-      if(owner)ctx.fillText(owner,x+cardW/2,y+270);
-      if(assigned){
-        ctx.strokeStyle="#d40000";ctx.lineWidth=11;ctx.lineCap="round";
-        ctx.beginPath();ctx.moveTo(imgX-8,imgY+10);ctx.lineTo(imgX+imgSize+8,imgY+imgSize-10);ctx.stroke();
-        ctx.beginPath();ctx.moveTo(imgX+imgSize+8,imgY+10);ctx.lineTo(imgX-8,imgY+imgSize-10);ctx.stroke();
-      }
-    });
-
-    ctx.textAlign="left";ctx.fillStyle="#777777";ctx.font="400 18px Arial";ctx.fillText("Generado desde fiebredeotono.web.app",margin,height-38);
-    const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/png"));
-    if(!blob)throw new Error("No se pudo generar la imagen");
-    const url=URL.createObjectURL(blob),a=document.createElement("a");
-    const slug=selectedParticipant.name.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
-    a.href=url;a.download=`fiebre-de-otono-${slug}.png`;a.click();URL.revokeObjectURL(url);
-    setParticipantMessage("Imagen exportada.");
+    const blob=await generateParticipantImageBlob();
+    await action(blob);
   }catch(err){
-    console.error(err);setParticipantMessage("No se pudo exportar la imagen.");
+    if(err?.name!=="AbortError"){console.error(err);setParticipantMessage(err?.message||"No se pudo generar la imagen.");}
   }finally{
     button.disabled=false;button.textContent=original;
   }
+}
+
+async function downloadParticipantImage(){
+  await withParticipantImageAction("downloadParticipantImageBtn","Generando…",async blob=>{
+    const url=URL.createObjectURL(blob),a=document.createElement("a");
+    a.href=url;a.download=participantImageFilename();a.click();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+    setParticipantMessage("Imagen descargada.");
+  });
+}
+
+async function copyParticipantImage(){
+  await withParticipantImageAction("copyParticipantImageBtn","Copiando…",async blob=>{
+    if(!navigator.clipboard?.write||typeof ClipboardItem==="undefined")throw new Error("Este navegador no permite copiar imágenes al portapapeles.");
+    await navigator.clipboard.write([new ClipboardItem({"image/png":blob})]);
+    setParticipantMessage("Imagen copiada.");
+  });
+}
+
+async function shareParticipantImage(){
+  await withParticipantImageAction("shareParticipantImageBtn","Compartiendo…",async blob=>{
+    if(!navigator.share)throw new Error("Este navegador no permite compartir imágenes directamente.");
+    const file=new File([blob],participantImageFilename(),{type:"image/png"});
+    if(navigator.canShare&&!navigator.canShare({files:[file]}))throw new Error("Este navegador no permite compartir esta imagen directamente.");
+    await navigator.share({files:[file],title:`Rifa “Fiebre de otoño” — ${selectedParticipant.name}`});
+    setParticipantMessage("Imagen compartida.");
+  });
 }
 
 function renderRows(){
@@ -447,10 +501,14 @@ async function installLatestVersion(){
   location.replace(url.toString());
 }
 
+$("gateLoginBtn").addEventListener("click",unlockGate);
+$("gatePassword").addEventListener("keydown",e=>{if(e.key==="Enter")unlockGate()});
 $("adminTabBtn").addEventListener("click",()=>switchAccessTab("admin"));
 $("participantsTabBtn").addEventListener("click",()=>switchAccessTab("participants"));
 $("backParticipantBtn").addEventListener("click",()=>{selectedParticipant=null;$("participantView").hidden=true;$("accessView").hidden=false;switchAccessTab("participants")});
-$("exportParticipantImageBtn").addEventListener("click",exportParticipantImage);
+$("downloadParticipantImageBtn").addEventListener("click",downloadParticipantImage);
+$("copyParticipantImageBtn").addEventListener("click",copyParticipantImage);
+$("shareParticipantImageBtn").addEventListener("click",shareParticipantImage);
 $("loginBtn").addEventListener("click",async()=>{ $("loginMessage").textContent=""; try{await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value)}catch(err){console.error(err);$("loginMessage").textContent="Email o contraseña incorrectos."}});
 $("password").addEventListener("keydown",e=>{if(e.key==="Enter")$("loginBtn").click()});
 $("logoutBtn").addEventListener("click",()=>signOut(auth));
@@ -478,12 +536,14 @@ window.addEventListener("focus",checkForUpdate);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)checkForUpdate()});
 setInterval(checkForUpdate,60000);
 renderParticipantButtons();
+if(gateIsOpen())showAccessAfterGate();
+else{$("gateView").hidden=false;$("accessView").hidden=true}
 checkForUpdate();
 
 onAuthStateChanged(auth,async user=>{
   if(!user){
     $("masterView").hidden=true;
-    if(!selectedParticipant)$("accessView").hidden=false;
+    if(!selectedParticipant&&gateIsOpen())$("accessView").hidden=false;
     return;
   }
   if(user.uid!==ADMIN_UID){$("loginMessage").textContent="Esta cuenta no está autorizada.";await signOut(auth);return}
