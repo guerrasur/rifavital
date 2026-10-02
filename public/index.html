@@ -22,14 +22,35 @@
       <header class="master-header">
         <div>
           <h1>RifaVital</h1>
-          <p><strong id="assignedCount">0</strong> asignadas · <strong id="freeCount">150</strong> libres</p>
+          <p><strong id="assignedCount">0</strong> asignadas · <strong id="freeCount">150</strong> libres · <strong id="progressCount">0%</strong> ocupación</p>
         </div>
         <button id="logoutBtn" class="button-light">Salir</button>
       </header>
 
-      <div class="toolbar">
+      <div class="toolbar toolbar-main">
         <input id="searchInput" type="search" placeholder="Buscar número, nombre o Pokémon">
+        <select id="statusFilter" aria-label="Filtrar estado">
+          <option value="all">Todas</option>
+          <option value="assigned">Asignadas</option>
+          <option value="free">Libres</option>
+        </select>
+        <button id="clearSearchBtn" class="button-light">Limpiar</button>
       </div>
+
+      <section class="tools-panel" aria-label="Herramientas">
+        <div class="tools-head">
+          <strong>Herramientas</strong>
+          <span><strong id="visibleCount">150</strong> visibles</span>
+        </div>
+        <div class="tools-grid">
+          <button id="exportExcelBtn">Exportar Excel</button>
+          <button id="bulkBtn" class="button-light">Carga rápida</button>
+          <button id="randomFreeBtn" class="button-light">Número libre al azar</button>
+          <button id="distributionBtn" class="button-light">Reparto 9×16</button>
+          <button id="copyAssignedBtn" class="button-light">Copiar asignadas</button>
+          <button id="copyFreeBtn" class="button-light">Copiar libres</button>
+        </div>
+      </section>
 
       <div class="table-wrap">
         <table class="master-table">
@@ -37,7 +58,7 @@
           <tbody id="raffleRows"></tbody>
         </table>
       </div>
-      <p id="globalMessage" class="message"></p>
+      <p id="globalMessage" class="message sticky-message"></p>
     </section>
   </main>
 
@@ -52,7 +73,32 @@
     </div>
   </dialog>
 
+  <dialog id="bulkDialog" class="wide-dialog">
+    <button id="closeBulkBtn" class="dialog-close" aria-label="Cerrar">×</button>
+    <h2>Carga rápida</h2>
+    <p>Pegá una rifa por línea. Ejemplo: <strong>25, Juan Pérez</strong></p>
+    <textarea id="bulkInput" rows="10" placeholder="25, Juan Pérez&#10;26, Ana Gómez"></textarea>
+    <pre id="bulkPreview" class="preview-box"></pre>
+    <div class="dialog-actions">
+      <button id="applyBulkBtn" disabled>Guardar lote</button>
+      <button class="button-light" onclick="document.getElementById('bulkDialog').close()">Cancelar</button>
+    </div>
+  </dialog>
+
+  <dialog id="distributionDialog" class="wide-dialog">
+    <button id="closeDistributionBtn" class="dialog-close" aria-label="Cerrar">×</button>
+    <h2>Reparto 9×16</h2>
+    <p>Divide los números 001–144 en 9 bloques de 16. Los 145–150 quedan aparte.</p>
+    <div id="distributionNames" class="name-grid"></div>
+    <pre id="distributionPreview" class="preview-box"></pre>
+    <div class="dialog-actions">
+      <button id="copyDistributionBtn">Copiar reparto</button>
+      <button class="button-light" onclick="document.getElementById('distributionDialog').close()">Cerrar</button>
+    </div>
+  </dialog>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script type="module" src="/app.js"></script>
 </body>
 </html>
