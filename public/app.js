@@ -1,12 +1,12 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-import { getFirestore, collection, getDocs, getDoc, doc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { initializeFirestore, collection, getDocs, getDoc, doc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { firebaseConfig, ADMIN_UID } from "/firebase-config.js";
 import { pokemonName, pokemonSprite } from "/pokemon.js";
 
-const app=initializeApp(firebaseConfig), auth=getAuth(app), db=getFirestore(app);
+const app=initializeApp(firebaseConfig), auth=getAuth(app), db=initializeFirestore(app,{experimentalForceLongPolling:true});
 const $=id=>document.getElementById(id), state=new Map();
-const VERSION="1.4.1";
+const VERSION="1.4.2";
 let latestVersion=VERSION;
 const TOTAL=150, DISTRIBUTION_TOTAL=144, DISTRIBUTION_PEOPLE=9, DISTRIBUTION_SIZE=16;
 const PARTICIPANTS=[
@@ -89,16 +89,23 @@ async function openParticipant(participant){
 
 async function loadParticipantTickets(participant){
   for(let n=participant.start;n<=participant.end;n++)state.delete(n);
+  const timeoutMs=12000;
+  let timeoutId;
   try{
     const reads=[];
     for(let n=participant.start;n<=participant.end;n++)reads.push(getDoc(doc(db,"tickets",ticketId(n))));
-    const snaps=await Promise.all(reads);
+    const timeout=new Promise((_,reject)=>{
+      timeoutId=setTimeout(()=>reject(new Error("Tiempo de espera agotado al conectar con Firestore.")),timeoutMs);
+    });
+    const snaps=await Promise.race([Promise.all(reads),timeout]);
+    clearTimeout(timeoutId);
     snaps.forEach((snap,i)=>{if(snap.exists())state.set(participant.start+i,snap.data())});
     renderParticipantGrid();
     setParticipantMessage("");
   }catch(err){
+    clearTimeout(timeoutId);
     console.error(err);
-    setParticipantMessage("No se pudieron cargar las rifas de este participante.");
+    setParticipantMessage("No se pudieron cargar las rifas. Volvé e intentá de nuevo.");
   }
 }
 
