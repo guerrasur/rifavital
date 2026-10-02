@@ -6,7 +6,7 @@ import { pokemonName, pokemonSprite } from "/pokemon.js";
 
 const app=initializeApp(firebaseConfig), auth=getAuth(app), db=initializeFirestore(app,{experimentalForceLongPolling:true});
 const $=id=>document.getElementById(id), state=new Map();
-const VERSION="1.4.3";
+const VERSION="1.4.4";
 let latestVersion=VERSION;
 const TOTAL=150, DISTRIBUTION_TOTAL=144, DISTRIBUTION_PEOPLE=9, DISTRIBUTION_SIZE=16;
 const PARTICIPANTS=[
@@ -504,6 +504,17 @@ async function applyBulk(){
   }catch(err){console.error(err);setMessage("No se pudo completar la carga rápida.");$("applyBulkBtn").disabled=false}
 }
 
+function compareVersions(a,b){
+  const left=String(a).split(".").map(part=>Number.parseInt(part,10)||0);
+  const right=String(b).split(".").map(part=>Number.parseInt(part,10)||0);
+  const length=Math.max(left.length,right.length);
+  for(let i=0;i<length;i++){
+    const l=left[i]||0,r=right[i]||0;
+    if(l!==r)return l>r?1:-1;
+  }
+  return 0;
+}
+
 async function checkForUpdate(){
   const label=$("versionLabel"),button=$("updateBtn");
   if(label)label.textContent=`v${VERSION}`;
@@ -511,9 +522,11 @@ async function checkForUpdate(){
     const response=await fetch(`/version.json?_=${Date.now()}`,{cache:"no-store",headers:{"Cache-Control":"no-cache"}});
     if(!response.ok)return;
     const data=await response.json();
-    latestVersion=String(data.version||VERSION);
+    const publishedVersion=String(data.version||VERSION);
+    const hasNewerVersion=compareVersions(publishedVersion,VERSION)>0;
+    latestVersion=hasNewerVersion?publishedVersion:VERSION;
     if(button){
-      if(latestVersion!==VERSION){button.textContent=`Actualizar a v${latestVersion}`;button.hidden=false}
+      if(hasNewerVersion){button.textContent=`Actualizar a v${publishedVersion}`;button.hidden=false}
       else button.hidden=true;
     }
   }catch(err){console.debug("No se pudo comprobar la versión.",err)}
