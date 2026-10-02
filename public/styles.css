@@ -75,3 +75,9 @@ dialog::backdrop{background:rgba(0,0,0,.42)}
   .master-table th,.master-table td{padding:8px}
   .name-grid{grid-template-columns:1fr}
 }
+
+.version-tools{position:fixed;top:max(10px,env(safe-area-inset-top));right:10px;z-index:50;display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.96);border:1px solid #cfcfcf;padding:6px 8px;font-size:12px}
+.version-tools span{font-weight:700;color:#555}
+.version-tools button{border:1px solid #000;background:#000;color:#fff;padding:6px 9px;font-size:12px;font-weight:800}
+.version-tools button[hidden]{display:none!important}
+@media(max-width:700px){.version-tools{top:max(6px,env(safe-area-inset-top));right:6px}}
