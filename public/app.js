@@ -6,7 +6,7 @@ import { pokemonName, pokemonSprite } from "/pokemon.js";
 
 const app=initializeApp(firebaseConfig), auth=getAuth(app), db=getFirestore(app);
 const $=id=>document.getElementById(id), state=new Map();
-const VERSION="1.4.0";
+const VERSION="1.4.1";
 let latestVersion=VERSION;
 const TOTAL=150, DISTRIBUTION_TOTAL=144, DISTRIBUTION_PEOPLE=9, DISTRIBUTION_SIZE=16;
 const PARTICIPANTS=[
@@ -181,10 +181,9 @@ async function generateParticipantImageBlob(){
   const width=1400,margin=60,gap=22,cols=4,header=180,cardW=(width-margin*2-gap*(cols-1))/cols,cardH=285,rows=4,height=header+rows*cardH+(rows-1)*gap+90;
   canvas.width=width;canvas.height=height;
   ctx.fillStyle="#ffffff";ctx.fillRect(0,0,width,height);
-  ctx.fillStyle="#000000";ctx.font="700 54px Arial";ctx.textAlign="left";ctx.fillText("Rifa “Fiebre de otoño”",margin,72);
-  ctx.font="700 38px Arial";ctx.fillText(selectedParticipant.name,margin,126);
-  const assignedCount=numbers.filter(n=>state.get(n)?.ownerName).length;
-  ctx.font="400 25px Arial";ctx.fillStyle="#555555";ctx.fillText(`${assignedCount}/16 asignados`,margin,160);
+  const headerTextX=margin+40;
+  ctx.fillStyle="#000000";ctx.font="700 54px Arial";ctx.textAlign="left";ctx.fillText("Rifa “Fiebre de otoño”",headerTextX,72);
+  ctx.font="700 38px Arial";ctx.fillText(selectedParticipant.name,headerTextX,126);
 
   numbers.forEach((n,i)=>{
     const col=i%cols,row=Math.floor(i/cols),x=margin+col*(cardW+gap),y=header+row*(cardH+gap),data=state.get(n)||{},assigned=Boolean(data.ownerName);
