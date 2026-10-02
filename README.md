@@ -338,3 +338,22 @@ Posibles mejoras futuras:
 ## Estado
 
 La aplicación base ya está implementada en el repositorio y conectada al proyecto Firebase `rifavital`. Queda desplegar las reglas de Firestore y Firebase Hosting para publicarla.
+
+
+---
+
+## Herramientas de administración agregadas
+
+El panel maestro incluye ahora:
+
+- exportación a Excel (.xlsx) con hojas separadas para todas las rifas, asignadas, libres y reparto 9×16;
+- filtros por estado y búsqueda combinada por número, titular o Pokémon;
+- carga rápida por lote usando líneas del tipo `25, Nombre Apellido`;
+- número libre al azar;
+- copia al portapapeles de listas de asignadas o libres;
+- reparto de los números 001–144 entre 9 personas, 16 números por persona, con nombres editables y conteo de asignadas/libres por bloque;
+- números 145–150 identificados como fuera del reparto 9×16;
+- compartir certificados desde el panel mediante el menú nativo del dispositivo o WhatsApp como alternativa;
+- QR, copia de link y descarga de QR conservadas.
+
+El certificado público mantiene su diseño simple, pero el sprite del Pokémon se redujo de aproximadamente 280 px a un máximo de 150 px para dar más aire al nombre y al número de rifa.
