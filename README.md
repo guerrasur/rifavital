@@ -357,3 +357,31 @@ El panel maestro incluye ahora:
 - QR, copia de link y descarga de QR conservadas.
 
 El certificado público mantiene su diseño simple, pero el sprite del Pokémon se redujo de aproximadamente 280 px a un máximo de 150 px para dar más aire al nombre y al número de rifa.
+
+
+---
+
+## Actualizaciones y deploy
+
+La aplicación usa `public/version.json` como fuente de versión publicada.
+
+- El panel muestra la versión local y consulta `version.json` sin caché al abrirse, al volver a primer plano y cada 60 segundos.
+- Si existe una versión diferente, aparece el botón **Actualizar**.
+- El botón limpia cachés/service workers heredados y recarga con parámetros de cache-busting.
+- El certificado público también comprueba la versión y se recarga cuando queda abierto durante una publicación nueva.
+- `firebase.json` envía headers `no-store/no-cache` para HTML, JS, CSS y `version.json`.
+
+### Flujo para futuras updates
+
+1. Cambiar la constante `VERSION` en `public/app.js` y `public/certificado.js`.
+2. Actualizar los query params de versión en `public/index.html` y `public/certificado.html`.
+3. Actualizar `public/version.json`.
+4. Hacer push a `main`.
+5. GitHub Actions ejecuta `.github/workflows/firebase-hosting-deploy.yml` y publica Firebase Hosting.
+
+El workflow acepta una de estas credenciales en GitHub Actions Secrets:
+
+- `FIREBASE_SERVICE_ACCOUNT_RIFAVITAL` (preferida)
+- `FIREBASE_TOKEN` (compatibilidad)
+
+Sin una de esas credenciales, el código se sube al repo pero Firebase Hosting no puede recibir el deploy automático.
