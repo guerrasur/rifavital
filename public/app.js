@@ -142,12 +142,12 @@ function distributionRows(names=[]){
 
 function exportExcel(){
   if(!window.XLSX){setMessage("No se pudo cargar el módulo de Excel. Recargá la página e intentá de nuevo.");return}
-  const all=ticketRows(),assigned=all.filter(r=>r.Estado==="Asignada"),free=all.filter(r=>r.Estado==="Libre"),wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(all),"Todas");
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(assigned),"Asignadas");
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(free),"Libres");
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(distributionRows()),"Reparto 9x16");
-  XLSX.writeFile(wb,`fiebre-de-otono-rifas-${new Date().toISOString().slice(0,10)}.xlsx`);
+  const xlsx=window.XLSX,all=ticketRows(),assigned=all.filter(r=>r.Estado==="Asignada"),free=all.filter(r=>r.Estado==="Libre"),wb=xlsx.utils.book_new();
+  xlsx.utils.book_append_sheet(wb,xlsx.utils.json_to_sheet(all),"Todas");
+  xlsx.utils.book_append_sheet(wb,xlsx.utils.json_to_sheet(assigned),"Asignadas");
+  xlsx.utils.book_append_sheet(wb,xlsx.utils.json_to_sheet(free),"Libres");
+  xlsx.utils.book_append_sheet(wb,xlsx.utils.json_to_sheet(distributionRows()),"Reparto 9x16");
+  xlsx.writeFile(wb,`fiebre-de-otono-rifas-${new Date().toISOString().slice(0,10)}.xlsx`);
   setMessage("Excel exportado: todas, asignadas, libres y reparto 9×16.");
 }
 
@@ -177,7 +177,7 @@ function openDistribution(){
   }
   refreshDistributionPreview();$("distributionDialog").showModal();
 }
-function distributionNames(){return Array.from($("#distributionNames").querySelectorAll("input")).map(i=>i.value.trim()||`Persona ${Number(i.dataset.index)+1}`)}
+function distributionNames(){return Array.from($("distributionNames").querySelectorAll("input")).map(i=>i.value.trim()||`Persona ${Number(i.dataset.index)+1}`)}
 function refreshDistributionPreview(){
   const rows=distributionRows(distributionNames());
   $("distributionPreview").textContent=rows.map(r=>`${r.Persona}: ${r.Desde} al ${r.Hasta}`).join("\n")+`\n\nQuedan ${formatRaffleNumber(DISTRIBUTION_TOTAL+1)} al ${formatRaffleNumber(TOTAL)} fuera del reparto.`;
