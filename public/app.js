@@ -7,7 +7,7 @@ import { buyerGroups, buyerUrl } from "/links.js";
 
 const app=initializeApp(firebaseConfig), auth=getAuth(app), db=initializeFirestore(app,{experimentalForceLongPolling:true});
 const $=id=>document.getElementById(id), state=new Map();
-const VERSION="1.5.0";
+const VERSION="1.5.1";
 let latestVersion=VERSION;
 const TOTAL=150, DISTRIBUTION_TOTAL=144, DISTRIBUTION_PEOPLE=9, DISTRIBUTION_SIZE=16;
 const PARTICIPANTS=[
@@ -271,14 +271,16 @@ function loadCanvasImage(src){
 async function generateParticipantImageBlob(){
   if(!selectedParticipant)throw new Error("No hay participante seleccionado.");
   const numbers=Array.from({length:16},(_,i)=>selectedParticipant.start+i);
+  const available=numbers.filter(n=>!state.get(n)?.ownerName).length;
   const images=await Promise.all(numbers.map(n=>loadCanvasImage(pokemonSprite(n))));
   const canvas=document.createElement("canvas"),ctx=canvas.getContext("2d");
-  const width=1400,margin=60,gap=22,cols=4,header=180,cardW=(width-margin*2-gap*(cols-1))/cols,cardH=285,rows=4,height=header+rows*cardH+(rows-1)*gap+90;
+  const width=1400,margin=60,gap=22,cols=4,header=220,cardW=(width-margin*2-gap*(cols-1))/cols,cardH=285,rows=4,height=header+rows*cardH+(rows-1)*gap+90;
   canvas.width=width;canvas.height=height;
   ctx.fillStyle="#ffffff";ctx.fillRect(0,0,width,height);
   const headerTextX=margin+40;
   ctx.fillStyle="#000000";ctx.font="700 54px Arial";ctx.textAlign="left";ctx.fillText("Rifa “Fiebre de otoño”",headerTextX,72);
   ctx.font="700 38px Arial";ctx.fillText(selectedParticipant.name,headerTextX,126);
+  ctx.font="700 28px Arial";ctx.fillText(`Rifas disponibles: ${available}/16`,headerTextX,170);
 
   numbers.forEach((n,i)=>{
     const col=i%cols,row=Math.floor(i/cols),x=margin+col*(cardW+gap),y=header+row*(cardH+gap),data=state.get(n)||{},assigned=Boolean(data.ownerName);
