@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#ffffff">
   <title>Rifa “Fiebre de otoño” — Administración</title>
-  <link rel="stylesheet" href="/styles.css?v=1.4.4">
+  <link rel="stylesheet" href="/styles.css?v=1.5.0">
 </head>
 <body class="admin-page">
   <div class="version-tools" aria-live="polite">
-    <span id="versionLabel">v1.4.4</span>
+    <span id="versionLabel">v1.5.0</span>
     <button id="updateBtn" type="button" hidden>Actualizar</button>
   </div>
 
@@ -50,11 +50,14 @@
           <p><strong id="participantAssignedCount">0</strong>/16 asignados</p>
         </div>
         <div class="participant-image-actions" aria-label="Imagen de rifas">
+          <button id="copyParticipantLinkBtn" class="button-light" type="button">Copiar mi link</button>
+          <button id="participantBuyerLinksBtn" class="button-light" type="button">Links de compradores</button>
           <button id="downloadParticipantImageBtn" class="button-light" type="button">Descargar imagen</button>
           <button id="copyParticipantImageBtn" class="button-light" type="button">Copiar imagen</button>
           <button id="shareParticipantImageBtn" class="button-light" type="button">Compartir imagen</button>
         </div>
       </header>
+      <p class="participant-help"><a id="participantDirectLink"></a></p>
       <p class="participant-help">Asigná cada Pokémon escribiendo el nombre del comprador. Los ya asignados quedan bloqueados y los puede editar o liberar el administrador.</p>
       <div id="participantGrid" class="participant-grid"></div>
       <p id="participantMessage" class="message sticky-message"></p>
@@ -90,6 +93,8 @@
           <button id="randomFreeBtn" class="button-light">Número libre al azar</button>
           <button id="distributionBtn" class="button-light">Reparto 9×16</button>
           <button id="copyAssignedBtn" class="button-light">Copiar asignadas</button>
+          <button id="participantLinksBtn" class="button-light">Links de integrantes</button>
+          <button id="adminBuyerLinksBtn" class="button-light">Links de compradores</button>
           <button id="copyFreeBtn" class="button-light">Copiar libres</button>
         </div>
       </section>
@@ -103,6 +108,20 @@
       <p id="globalMessage" class="message sticky-message"></p>
     </section>
   </main>
+
+  <dialog id="buyerLinksDialog" class="wide-dialog">
+    <button id="closeBuyerLinksBtn" class="dialog-close" aria-label="Cerrar">×</button>
+    <h2>Links de compradores</h2>
+    <p>Un enlace con todas las rifas registradas con el mismo nombre. Usá nombres completos para distinguir compradores.</p>
+    <div id="buyerLinksList" class="links-list"></div>
+    <p id="buyerLinksMessage" class="message" aria-live="polite"></p>
+  </dialog>
+  <dialog id="participantLinksDialog" class="wide-dialog">
+    <button id="closeParticipantLinksBtn" class="dialog-close" aria-label="Cerrar">×</button>
+    <h2>Links de integrantes</h2>
+    <div id="participantLinksList" class="links-list"></div>
+    <p id="participantLinksMessage" class="message" aria-live="polite"></p>
+  </dialog>
 
   <dialog id="qrDialog">
     <button id="closeQrBtn" class="dialog-close" aria-label="Cerrar">×</button>
@@ -141,6 +160,6 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script type="module" src="/app.js?v=1.4.4"></script>
+  <script type="module" src="/app.js?v=1.5.0"></script>
 </body>
 </html>

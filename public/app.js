@@ -3,30 +3,33 @@ import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from
 import { initializeFirestore, collection, getDocs, getDoc, doc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { firebaseConfig, ADMIN_UID } from "/firebase-config.js";
 import { pokemonName, pokemonSprite } from "/pokemon.js";
+import { buyerGroups, buyerUrl } from "/links.js";
 
 const app=initializeApp(firebaseConfig), auth=getAuth(app), db=initializeFirestore(app,{experimentalForceLongPolling:true});
 const $=id=>document.getElementById(id), state=new Map();
-const VERSION="1.4.4";
+const VERSION="1.5.0";
 let latestVersion=VERSION;
 const TOTAL=150, DISTRIBUTION_TOTAL=144, DISTRIBUTION_PEOPLE=9, DISTRIBUTION_SIZE=16;
 const PARTICIPANTS=[
-  {name:"Juana",start:1,end:16},
-  {name:"Fede Diez",start:17,end:32},
-  {name:"Juanma",start:33,end:48},
-  {name:"Lucio",start:49,end:64},
-  {name:"Rama",start:65,end:80},
-  {name:"Fede Torres",start:81,end:96},
-  {name:"Aye",start:97,end:112},
-  {name:"Sofi",start:113,end:128},
-  {name:"Blas",start:129,end:144}
+  {slug:"juana",name:"Juana",start:1,end:16},
+  {slug:"fede-diez",name:"Fede Diez",start:17,end:32},
+  {slug:"juanma",name:"Juanma",start:33,end:48},
+  {slug:"lucio",name:"Lucio",start:49,end:64},
+  {slug:"rama",name:"Rama",start:65,end:80},
+  {slug:"fede-torres",name:"Fede Torres",start:81,end:96},
+  {slug:"aye",name:"Aye",start:97,end:112},
+  {slug:"sofi",name:"Sofi",start:113,end:128},
+  {slug:"blas",name:"Blas",start:129,end:144}
 ];
 let selectedParticipant=null;
+const linkedParticipant=PARTICIPANTS.find(p=>p.slug===new URLSearchParams(location.search).get("integrante"));
 const GATE_PASSWORD="cortoidac";
 const GATE_SESSION_KEY="fiebre_gate_ok";
 
 const formatRaffleNumber=n=>String(n).padStart(3,"0");
 const ticketId=n=>formatRaffleNumber(n);
 const makeToken=()=>{const bytes=new Uint8Array(24);crypto.getRandomValues(bytes);return Array.from(bytes,b=>b.toString(16).padStart(2,"0")).join("")};
+const participantUrl=p=>`${location.origin}/?integrante=${p.slug}`;
 const certificateUrl=(token,n)=>`${location.origin}/r/${formatRaffleNumber(n)}?id=${encodeURIComponent(token)}`;
 const setMessage=text=>$("globalMessage").textContent=text||"";
 const setParticipantMessage=text=>$("participantMessage").textContent=text||"";
@@ -43,7 +46,12 @@ function renderParticipantButtons(){
     button.className="participant-select";
     button.innerHTML=`<strong>${escapeHtml(p.name)}</strong><span>${formatRaffleNumber(p.start)}–${formatRaffleNumber(p.end)}</span>`;
     button.addEventListener("click",()=>openParticipant(p));
-    box.appendChild(button);
+    const item=document.createElement("div");item.className="participant-link-item";
+    item.appendChild(button);
+    const copy=document.createElement("button");copy.type="button";copy.className="button-light";
+    copy.textContent="Copiar link";copy.setAttribute("aria-label",`Copiar link de ${p.name}`);
+    copy.addEventListener("click",()=>copyLink(participantUrl(p),copy,$("loginMessage")));
+    item.appendChild(copy);box.appendChild(item);
   });
 }
 
@@ -83,6 +91,11 @@ async function openParticipant(participant){
   $("masterView").hidden=true;
   $("participantView").hidden=false;
   $("participantTitle").textContent=participant.name;
+  $("gateView").hidden=true;
+  const url=new URL(location.href);url.searchParams.set("integrante",participant.slug);
+  history.replaceState(null,"",url);
+  $("participantDirectLink").href=participantUrl(participant);
+  $("participantDirectLink").textContent=participantUrl(participant);
   setParticipantMessage("Cargando…");
   await loadParticipantTickets(participant);
 }
@@ -99,12 +112,14 @@ async function loadParticipantTickets(participant){
     });
     const snaps=await Promise.race([Promise.all(reads),timeout]);
     clearTimeout(timeoutId);
+    if(selectedParticipant!==participant)return;
     snaps.forEach((snap,i)=>{if(snap.exists())state.set(participant.start+i,snap.data())});
     renderParticipantGrid();
     setParticipantMessage("");
   }catch(err){
     clearTimeout(timeoutId);
     console.error(err);
+    if(selectedParticipant!==participant)return;
     setParticipantMessage("No se pudieron cargar las rifas. Volvé e intentá de nuevo.");
   }
 }
@@ -199,6 +214,48 @@ async function assignParticipantTicket(n,ownerName,card){
     card.classList.remove("saving");
     setParticipantMessage("No se pudo asignar. Puede que otra persona haya tomado esa rifa al mismo tiempo.");
   }
+}
+
+async function copyLink(url,button,message){
+  const original=button.textContent;
+  try{
+    if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(url);
+    else{
+      const input=document.createElement("textarea");input.value=url;
+      input.style.position="fixed";input.style.opacity="0";
+      (button.closest("dialog")||document.body).appendChild(input);input.select();
+      const copied=document.execCommand("copy");input.remove();
+      if(!copied)throw new Error("No se pudo copiar");
+    }
+    button.textContent="Copiado";
+    if(message)message.textContent="Link copiado.";
+    setTimeout(()=>button.textContent=original,1400);
+  }catch(err){if(message)message.textContent="No se pudo copiar. Abrí el enlace y copialo desde la barra de direcciones."}
+}
+
+function openBuyerLinks(){
+  const tickets=Array.from(state).filter(([n])=>!selectedParticipant||(n>=selectedParticipant.start&&n<=selectedParticipant.end));
+  const groups=buyerGroups(tickets),box=$("buyerLinksList");box.innerHTML="";
+  $("buyerLinksMessage").textContent=groups.length?"":"Todavía no hay rifas asignadas.";
+  for(const group of groups){
+    const url=buyerUrl(location.origin,group.tickets),item=document.createElement("article");
+    item.className="buyer-link-item";
+    item.innerHTML=`<strong>${escapeHtml(group.name)}</strong><p>${group.tickets.map(t=>`#${formatRaffleNumber(t.number)}`).join(" · ")}</p><a href="${url}" target="_blank" rel="noopener">Ver tus rifas</a><button type="button" class="button-light">Copiar link</button>`;
+    item.querySelector("button").addEventListener("click",()=>copyLink(url,item.querySelector("button"),$("buyerLinksMessage")));
+    box.appendChild(item);
+  }
+  $("buyerLinksDialog").showModal();
+}
+
+function openParticipantLinks(){
+  const box=$("participantLinksList");box.innerHTML="";
+  PARTICIPANTS.forEach(p=>{
+    const item=document.createElement("article"),url=participantUrl(p);item.className="buyer-link-item";
+    item.innerHTML=`<strong>${escapeHtml(p.name)}</strong><p>${formatRaffleNumber(p.start)}–${formatRaffleNumber(p.end)}</p><a href="${url}" target="_blank" rel="noopener">Abrir sección</a><button type="button" class="button-light">Copiar link</button>`;
+    item.querySelector("button").addEventListener("click",()=>copyLink(url,item.querySelector("button"),$("participantLinksMessage")));
+    box.appendChild(item);
+  });
+  $("participantLinksMessage").textContent="";$("participantLinksDialog").showModal();
 }
 
 function loadCanvasImage(src){
@@ -555,7 +612,18 @@ $("gateLoginBtn").addEventListener("click",unlockGate);
 $("gatePassword").addEventListener("keydown",e=>{if(e.key==="Enter")unlockGate()});
 $("adminTabBtn").addEventListener("click",()=>switchAccessTab("admin"));
 $("participantsTabBtn").addEventListener("click",()=>switchAccessTab("participants"));
-$("backParticipantBtn").addEventListener("click",()=>{selectedParticipant=null;$("participantView").hidden=true;$("accessView").hidden=false;switchAccessTab("participants")});
+$("backParticipantBtn").addEventListener("click",()=>{
+  selectedParticipant=null;$("participantView").hidden=true;
+  const url=new URL(location.href);url.searchParams.delete("integrante");history.replaceState(null,"",url);
+  if(gateIsOpen())$("accessView").hidden=false;else $("gateView").hidden=false;
+  switchAccessTab("participants");
+});
+$("copyParticipantLinkBtn").addEventListener("click",()=>{if(selectedParticipant)copyLink(participantUrl(selectedParticipant),$("copyParticipantLinkBtn"),$("participantMessage"))});
+$("participantBuyerLinksBtn").addEventListener("click",openBuyerLinks);
+$("adminBuyerLinksBtn").addEventListener("click",openBuyerLinks);
+$("participantLinksBtn").addEventListener("click",openParticipantLinks);
+$("closeBuyerLinksBtn").addEventListener("click",()=>$("buyerLinksDialog").close());
+$("closeParticipantLinksBtn").addEventListener("click",()=>$("participantLinksDialog").close());
 $("downloadParticipantImageBtn").addEventListener("click",downloadParticipantImage);
 $("copyParticipantImageBtn").addEventListener("click",copyParticipantImage);
 $("shareParticipantImageBtn").addEventListener("click",shareParticipantImage);
@@ -586,7 +654,8 @@ window.addEventListener("focus",checkForUpdate);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)checkForUpdate()});
 setInterval(checkForUpdate,60000);
 renderParticipantButtons();
-if(gateIsOpen())showAccessAfterGate();
+if(linkedParticipant)openParticipant(linkedParticipant);
+else if(gateIsOpen())showAccessAfterGate();
 else{$("gateView").hidden=false;$("accessView").hidden=true}
 checkForUpdate();
 
@@ -597,6 +666,7 @@ onAuthStateChanged(auth,async user=>{
     return;
   }
   if(user.uid!==ADMIN_UID){$("loginMessage").textContent="Esta cuenta no está autorizada.";await signOut(auth);return}
-  selectedParticipant=null;$("accessView").hidden=true;$("participantView").hidden=true;$("masterView").hidden=false;
+  if(selectedParticipant)return;
+  selectedParticipant=null;$("gateView").hidden=true;$("accessView").hidden=true;$("participantView").hidden=true;$("masterView").hidden=false;
   try{await loadTickets()}catch(err){console.error(err);setMessage("Conectado, pero Firestore todavía no permite leer la tabla. Falta desplegar las reglas.")}
 });
