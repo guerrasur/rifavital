@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#ffffff">
   <title>Rifa “Fiebre de otoño” — Administración</title>
-  <link rel="stylesheet" href="/styles.css?v=1.10.0">
+  <link rel="stylesheet" href="/styles.css?v=1.11.0">
 </head>
 <body class="admin-page">
   <div class="version-tools" aria-live="polite">
-    <span id="versionLabel">v1.10.0</span>
+    <span id="versionLabel">v1.11.0</span>
     <button id="updateBtn" type="button" hidden>Actualizar</button>
   </div>
 
@@ -30,6 +30,7 @@
       </div>
 
       <button id="rafflePosterBtn" class="poster-open-button button-light" type="button">Compartir afiche de rifas</button>
+      <button id="pokemonPosterBtn" class="poster-open-button button-light" type="button">Compartir afiche de pokemones</button>
 
       <div id="adminAccessPanel">
         <div id="adminSessionPanel" hidden>
@@ -228,8 +229,22 @@
     </div>
   </dialog>
 
+  <dialog id="pokemonPosterDialog" class="poster-dialog" aria-labelledby="pokemonPosterTitle">
+    <button id="closePokemonPosterBtn" class="dialog-close" aria-label="Cerrar">×</button>
+    <h2 id="pokemonPosterTitle">Afiche de Pokémon</h2>
+    <p>Los 150 Pokémon con su número. Los asignados se tachan automáticamente.</p>
+    <p id="pokemonPosterMessage" class="message" role="status" aria-live="polite"></p>
+    <img id="pokemonPosterPreview" alt="Los 150 Pokémon de la rifa Fiebre de otoño, con los asignados tachados en rojo" hidden>
+    <div class="dialog-actions">
+      <button id="copyPokemonPosterBtn" type="button" disabled>Copiar imagen</button>
+      <button id="sharePokemonPosterBtn" type="button" disabled>Compartir imagen</button>
+      <button id="downloadPokemonPosterBtn" class="button-light" type="button" disabled>Descargar</button>
+      <button id="retryPokemonPosterBtn" class="button-light" type="button" hidden>Reintentar</button>
+    </div>
+  </dialog>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script type="module" src="/app.js?v=1.10.0"></script>
+  <script type="module" src="/app.js?v=1.11.0"></script>
 </body>
 </html>

@@ -42,8 +42,8 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .poster-open-button{width:100%;margin:0 0 18px;min-height:44px}
 .poster-dialog{width:min(620px,calc(100vw - 24px));max-height:90dvh;overflow:auto}
 .poster-dialog>p{font-size:14px}
-#rafflePosterPreview{display:block;width:100%;height:auto;margin:12px 0}
-#rafflePosterPreview[hidden]{display:none}
+#rafflePosterPreview,#pokemonPosterPreview{display:block;width:100%;height:auto;margin:12px 0}
+#rafflePosterPreview[hidden],#pokemonPosterPreview[hidden]{display:none}
 .poster-dialog .dialog-actions{flex-wrap:wrap}
 .poster-dialog .dialog-actions button{min-height:44px}
 .participant-intro{margin:0 0 12px!important;color:#555}

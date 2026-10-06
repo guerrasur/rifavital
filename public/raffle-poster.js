@@ -23,8 +23,10 @@ export async function generatePosterBlob(image,assigned){
   return blob;
 }
 
-export function initRafflePoster({subscribe}){
-  const $=id=>document.getElementById(id),dialog=$("rafflePosterDialog"),preview=$("rafflePosterPreview");
+export function initRafflePoster({subscribe,variant="raffle",generateBlob}){
+  const pokemon=variant==="pokemon";
+  const $=id=>document.getElementById(pokemon?id.replace("RafflePoster","PokemonPoster").replace("rafflePoster","pokemonPoster"):id),dialog=$("rafflePosterDialog"),preview=$("rafflePosterPreview");
+  const filename=pokemon?"fiebre-de-otono-pokemones.png":"fiebre-de-otono-rifas.png";
   const actions=["copyRafflePosterBtn","shareRafflePosterBtn","downloadRafflePosterBtn"].map($);
   const assigned=new Set(),ready=new Set();
   let unsubscribers=[],timer,deadline,revision=0,session=0,blob=null,previewUrl=null,imagePromise=null;
@@ -57,7 +59,7 @@ export function initRafflePoster({subscribe}){
   async function render(){
     const current=revision,numbers=new Set(assigned);
     try{
-      const image=await loadImage(),nextBlob=await generatePosterBlob(image,numbers);
+      const nextBlob=generateBlob?await generateBlob(numbers):await generatePosterBlob(await loadImage(),numbers);
       if(current!==revision||!dialog.open||ready.size!==150)return;
       revokePreview();blob=nextBlob;previewUrl=URL.createObjectURL(blob);
       preview.src=previewUrl;preview.hidden=false;
@@ -109,18 +111,18 @@ export function initRafflePoster({subscribe}){
   });
   $("shareRafflePosterBtn").addEventListener("click",()=>{
     if(!blob)return;
-    const file=new File([blob],"fiebre-de-otono-rifas.png",{type:"image/png"});
+    const file=new File([blob],filename,{type:"image/png"});
     if(!navigator.share||(navigator.canShare&&!navigator.canShare({files:[file]}))){
       message("Este navegador no permite compartir imágenes. Usá Copiar imagen o Descargar.");return;
     }
-    navigator.share({files:[file],title:"Rifa Fiebre de otoño"})
+    navigator.share({files:[file],title:pokemon?"Pokémon · Rifa Fiebre de otoño":"Rifa Fiebre de otoño"})
       .then(()=>message("Imagen compartida."))
       .catch(error=>{if(error.name!=="AbortError")message("No se pudo compartir. Usá Copiar imagen o Descargar.")});
   });
   $("downloadRafflePosterBtn").addEventListener("click",()=>{
     if(!blob)return;
     const url=URL.createObjectURL(blob),link=document.createElement("a");
-    link.href=url;link.download="fiebre-de-otono-rifas.png";link.click();
+    link.href=url;link.download=filename;link.click();
     setTimeout(()=>URL.revokeObjectURL(url),1000);message("Imagen descargada.");
   });
 }

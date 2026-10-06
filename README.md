@@ -413,6 +413,12 @@ En el menú de acceso, junto a Admin y Participantes, **Compartir afiche de rifa
 
 La vista consulta los 150 documentos individuales permitidos por las reglas actuales y escucha asignaciones y liberaciones mientras está abierta. Al cerrarla cancela las suscripciones. No utiliza el listado restringido de administración ni modifica las reglas. Espera datos confirmados del servidor para habilitar las acciones; ante una falla oculta la vista previa y permite reintentar. La imagen compartida contiene únicamente el afiche y las cruces, sin nombres ni enlaces de compradores.
 
+### Afiche de los 150 Pokémon (v1.11.0)
+
+Debajo de **Compartir afiche de rifas**, **Compartir afiche de pokemones** abre una grilla de los 150 Pokémon con sus números y nombres. Los libres quedan visibles y los asignados llevan una cruz roja. Utiliza los sprites locales de `public/assets/draw-pokemon/` y muestra el crédito “Fiebre Producciones © 2026”, sin datos de compradores.
+
+Comparte el mismo flujo de datos confirmados del servidor, actualización en vivo, copia de imagen, menú nativo de compartir, descarga PNG y reintento del afiche original. Las acciones se habilitan después de preparar la imagen, para conservar la activación del botón al compartir desde iPhone.
+
 ### Sorteo del primer premio (v1.9.0)
 
 La contraseña de la portada se recuerda entre visitas en el mismo navegador mediante un indicador en `localStorage`. No se guarda el texto de la contraseña. Se migra el acceso de una sesión anterior y, si el almacenamiento no está disponible, el ingreso continúa funcionando durante la visita actual. El login de administración mantiene su autenticación independiente.
