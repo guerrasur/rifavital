@@ -412,3 +412,15 @@ La carta incorpora un reflejo diagonal tenue con matices holográficos. Su posic
 En el menú de acceso, junto a Admin y Participantes, **Compartir afiche de rifas** abre el afiche original con cruces rojas sobre los números asignados. Se puede copiar como imagen, compartir con el menú nativo o descargar en PNG. El original está en `public/assets/rifa-fiebre-original.jpeg` sin modificaciones.
 
 La vista consulta los 150 documentos individuales permitidos por las reglas actuales y escucha asignaciones y liberaciones mientras está abierta. Al cerrarla cancela las suscripciones. No utiliza el listado restringido de administración ni modifica las reglas. Espera datos confirmados del servidor para habilitar las acciones; ante una falla oculta la vista previa y permite reintentar. La imagen compartida contiene únicamente el afiche y las cruces, sin nombres ni enlaces de compradores.
+
+### Sorteo del primer premio (v1.9.0)
+
+La contraseña de la portada se recuerda entre visitas en el mismo navegador mediante un indicador en `localStorage`. No se guarda el texto de la contraseña. Se migra el acceso de una sesión anterior y, si el almacenamiento no está disponible, el ingreso continúa funcionando durante la visita actual. El login de administración mantiene su autenticación independiente.
+
+Admin incluye el botón dorado **Sortear**. La pantalla muestra tres bloques verticales iguales; únicamente el primer premio está habilitado en esta etapa. Las siluetas recorren aleatoriamente los 150 Pokémon, desaceleran, mantienen la ganadora oculta 2,4 segundos y la revelan con un aumento de tamaño de 340 ms. Debajo aparecen número, comprador y vendedor.
+
+Participan solo las rifas asignadas consultadas desde el servidor al iniciar: cada número tiene la misma probabilidad mediante `crypto.getRandomValues` y muestreo por rechazo. La animación visual es independiente de la elección. El nombre del vendedor usa el dato de la rifa y, si falta, su bloque de reparto; para los números fuera del reparto se indica que no hay vendedor registrado.
+
+El resultado y los números participantes se guardan en `draws/first-prize`, con acceso exclusivo de administradores. Una transacción evita sobrescribir un resultado generado simultáneamente desde otro dispositivo y verifica que el número seleccionado siga asignado al mismo comprador. El resultado permanece al recargar; **Volver a sortear** requiere confirmar que se reemplazará el ganador. El botón y el regreso se bloquean durante el proceso. Si se pierde la sesión, la vista se cierra. Con reducción de movimiento se omite el recorrido rápido y la ampliación.
+
+Los 150 sprites transparentes de Red/Blue de [PokéAPI/sprites](https://github.com/PokeAPI/sprites/tree/master/sprites/pokemon/versions/generation-i/red-blue/transparent) se sirven localmente desde `public/assets/draw-pokemon/`, para que la animación no dependa de un servidor externo.

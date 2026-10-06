@@ -88,6 +88,11 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    match /draws/first-prize {
+      allow read, create, update: if isAdmin();
+      allow delete: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

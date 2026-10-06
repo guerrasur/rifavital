@@ -1,14 +1,15 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-import { initializeFirestore, collection, getDocs, getDoc, doc, writeBatch, serverTimestamp, onSnapshot } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { initializeFirestore, collection, getDocs, getDoc, getDocsFromServer, getDocFromServer, runTransaction, doc, writeBatch, serverTimestamp, onSnapshot } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { firebaseConfig, ADMIN_UID } from "/firebase-config.js";
 import { pokemonName, pokemonSprite } from "/pokemon.js";
 import { buyerGroups, buyerUrl } from "/links.js";
 import { initRafflePoster } from "/raffle-poster.js?v=1.8.0";
+import { initDraw } from "/draw.js?v=1.9.0";
 
 const app=initializeApp(firebaseConfig), auth=getAuth(app), db=initializeFirestore(app,{experimentalForceLongPolling:true});
 const $=id=>document.getElementById(id), state=new Map();
-const VERSION="1.8.0";
+const VERSION="1.9.0";
 let latestVersion=VERSION;
 const TOTAL=150, DISTRIBUTION_TOTAL=144, DISTRIBUTION_PEOPLE=9, DISTRIBUTION_SIZE=16;
 initRafflePoster({subscribe:(number,next,error)=>onSnapshot(doc(db,"tickets",String(number).padStart(3,"0")),{includeMetadataChanges:true},snapshot=>next({assigned:Boolean(snapshot.exists()&&snapshot.data().ownerName),fromCache:snapshot.metadata.fromCache,pending:snapshot.metadata.hasPendingWrites}),error)});
@@ -27,6 +28,7 @@ let selectedParticipant=null;
 const linkedParticipant=PARTICIPANTS.find(p=>p.slug===new URLSearchParams(location.search).get("integrante"));
 const GATE_PASSWORD="cortoidac";
 const GATE_SESSION_KEY="fiebre_gate_ok";
+let gateUnlocked=false;
 
 const formatRaffleNumber=n=>String(n).padStart(3,"0");
 const ticketId=n=>formatRaffleNumber(n);
@@ -39,6 +41,42 @@ const setParticipantMessage=text=>$("participantMessage").textContent=text||"";
 function escapeHtml(value){return String(value).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;")}
 function currentFilter(){return $("statusFilter")?.value||"all"}
 function participantForNumber(n){return PARTICIPANTS.find(p=>n>=p.start&&n<=p.end)||null}
+
+function drawRequest(promise){
+  let timer;
+  return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error("No se pudo conectar con el sorteo. Revisá la conexión e intentá de nuevo.")),15000)})]).finally(()=>clearTimeout(timer));
+}
+const drawRef=doc(db,"draws","first-prize");
+const drawController=initDraw({
+  isAdmin:()=>auth.currentUser?.uid===ADMIN_UID,
+  sellerForNumber:participantForNumber,
+  loadTickets:async()=>{
+    const snap=await drawRequest(getDocsFromServer(collection(db,"tickets")));
+    return snap.docs.map(ticket=>[Number(ticket.id),ticket.data()]);
+  },
+  loadResult:async()=>{
+    const snap=await drawRequest(getDocFromServer(drawRef));
+    return snap.exists()?snap.data():null;
+  },
+  saveResult:async(winner,expectedDrawId)=>{
+    try{
+      return await drawRequest(runTransaction(db,async transaction=>{
+        const existing=await transaction.get(drawRef);
+        if(existing.exists()&&existing.data().drawId!==expectedDrawId)return existing.data();
+        if(!existing.exists()&&expectedDrawId)throw new Error("El resultado cambió. Volvé a abrir el sorteo.");
+        const ticket=await transaction.get(doc(db,"tickets",ticketId(winner.number)));
+        if(!ticket.exists()||ticket.data().ownerName?.trim()!==winner.ownerName)throw new Error("Las rifas cambiaron mientras se preparaba el sorteo. Intentá nuevamente.");
+        transaction.set(drawRef,{...winner,prize:1,createdAt:serverTimestamp(),adminUid:auth.currentUser.uid});
+        return winner;
+      }));
+    }catch(error){
+      // A timed-out write may still have committed. Reload before permitting another draw.
+      const saved=await drawRequest(getDocFromServer(drawRef)).catch(()=>null);
+      if(saved?.exists()&&saved.data().drawId===winner.drawId)return saved.data();
+      throw error;
+    }
+  }
+});
 
 function renderParticipantButtons(){
   const box=$("participantButtons");box.innerHTML="";
@@ -67,7 +105,12 @@ function switchAccessTab(tab){
 }
 
 function gateIsOpen(){
-  return sessionStorage.getItem(GATE_SESSION_KEY)==="1";
+  if(gateUnlocked)return true;
+  try{
+    gateUnlocked=localStorage.getItem(GATE_SESSION_KEY)==="1"||sessionStorage.getItem(GATE_SESSION_KEY)==="1";
+    if(gateUnlocked)localStorage.setItem(GATE_SESSION_KEY,"1");
+  }catch(error){console.warn("No se pudo leer el acceso guardado.");}
+  return gateUnlocked;
 }
 
 function showAccessAfterGate(){
@@ -82,7 +125,8 @@ function unlockGate(){
     $("gatePassword").select();
     return;
   }
-  sessionStorage.setItem(GATE_SESSION_KEY,"1");
+  gateUnlocked=true;
+  try{localStorage.setItem(GATE_SESSION_KEY,"1")}catch(error){console.warn("No se pudo recordar el acceso en este navegador.");}
   $("gateMessage").textContent="";
   showAccessAfterGate();
 }
@@ -665,6 +709,7 @@ checkForUpdate();
 
 onAuthStateChanged(auth,async user=>{
   if(!user){
+    drawController.close();
     $("masterView").hidden=true;
     if(!selectedParticipant&&gateIsOpen())$("accessView").hidden=false;
     return;

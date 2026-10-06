@@ -101,6 +101,33 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .master-table tr.saving{opacity:.5;pointer-events:none}
 .master-table tr.flash-row td{animation:flash 1.8s ease}
 @keyframes flash{0%,100%{background:#fff}25%,75%{background:#fff2a8}}
+.admin-header-actions{display:flex;gap:8px;align-items:center}
+.button-gold{border:1px solid #a67b2d!important;background:linear-gradient(115deg,#b9872e,#f3d47c 48%,#c39740)!important;color:#241c0c!important;box-shadow:0 3px 10px #ab822326;font-weight:800;padding:11px 20px;border-radius:7px;min-height:44px}
+.button-gold:hover:not(:disabled){background:linear-gradient(115deg,#c59a49,#ffe5a0 48%,#dab058)!important}
+.button-gold:focus-visible,.draw-header button:focus-visible{outline:3px solid #bd8e33;outline-offset:4px}
+.drawing-page{background:#f2eee5}
+.drawing-page .admin-shell{width:min(820px,calc(100% - 24px));padding-top:54px;padding-bottom:24px}
+.draw-header{text-align:center;margin:0 0 12px}
+.draw-header button{display:block;border:0;background:none;color:#55472c;font-size:13px;padding:10px 0;min-height:44px}
+.draw-header h1{font-size:30px;margin:0;color:#302719;letter-spacing:-.03em}
+.draw-header p{font-size:13px;color:#72664f;margin:8px 0}
+.draw-message{text-align:center;color:#786037;font-size:13px;min-height:18px;margin:8px 0 12px}
+.draw-prizes{display:grid;grid-template-rows:repeat(3,minmax(270px,1fr));gap:12px;min-height:calc(100svh - 210px)}
+.draw-prize{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:#fffdf7;border:1px solid #d8c8a8;border-radius:14px;padding:18px 20px;box-shadow:0 4px 18px #735e3510;min-width:0}
+.draw-prize h2{color:#93702c;font-size:20px;margin:0 0 4px;font-weight:800}
+.draw-image-stage{display:grid;place-items:center;width:180px;height:140px;margin:0 auto;overflow:visible}
+.draw-pokemon{display:block;width:140px;height:140px;object-fit:contain;image-rendering:pixelated;transform-origin:center}
+.draw-pokemon.is-silhouette{filter:brightness(0);opacity:.9}
+.draw-number{font-size:17px;font-weight:800;color:#302719;margin:4px 0 8px;font-variant-numeric:tabular-nums}
+.draw-winner{min-width:0;max-width:100%;margin-bottom:10px}
+.draw-owner{font-size:22px;font-weight:800;color:#302719;overflow-wrap:anywhere;margin:0 0 4px}
+.draw-seller{font-size:12px;color:#92908a;margin:0;overflow-wrap:anywhere}
+.draw-start{min-width:160px;font-size:15px;letter-spacing:.04em}
+.draw-status{font-size:12px;color:#958977;margin:8px 0 0;min-height:15px}
+.draw-pokemon.is-revealing{animation:draw-reveal .34s cubic-bezier(.2,.85,.25,1)}
+@keyframes draw-reveal{0%{transform:scale(1)}42%{transform:scale(1.45)}100%{transform:scale(1)}}
+@media(prefers-reduced-motion:reduce){.draw-pokemon.is-revealing{animation:none}}
+@media(max-width:400px){.draw-prize{padding:16px 12px}.draw-owner{font-size:20px}.master-header .admin-header-actions{flex-wrap:wrap;justify-content:flex-end}}
 dialog{width:min(430px,calc(100% - 28px));border:1px solid #000;padding:24px}
 dialog.wide-dialog{width:min(640px,calc(100% - 28px))}
 dialog::backdrop{background:rgba(0,0,0,.42)}

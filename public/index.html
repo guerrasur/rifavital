@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#ffffff">
   <title>Rifa “Fiebre de otoño” — Administración</title>
-  <link rel="stylesheet" href="/styles.css?v=1.8.0">
+  <link rel="stylesheet" href="/styles.css?v=1.9.0">
 </head>
 <body class="admin-page">
   <div class="version-tools" aria-live="polite">
-    <span id="versionLabel">v1.8.0</span>
+    <span id="versionLabel">v1.9.0</span>
     <button id="updateBtn" type="button" hidden>Actualizar</button>
   </div>
 
@@ -71,7 +71,10 @@
           <h1>Fiebre de otoño</h1>
           <p><strong id="assignedCount">0</strong> asignadas · <strong id="freeCount">150</strong> libres · <strong id="progressCount">0%</strong> ocupación</p>
         </div>
-        <button id="logoutBtn" class="button-light">Salir</button>
+        <div class="admin-header-actions">
+          <button id="openDrawBtn" class="button-gold" type="button">Sortear</button>
+          <button id="logoutBtn" class="button-light">Salir</button>
+        </div>
       </header>
 
       <div class="toolbar toolbar-main">
@@ -108,6 +111,41 @@
         </table>
       </div>
       <p id="globalMessage" class="message sticky-message"></p>
+    </section>
+    <section id="drawView" class="draw-view" aria-labelledby="drawTitle" hidden>
+      <header class="draw-header">
+        <button id="backDrawBtn" type="button">← Volver a Admin</button>
+        <h1 id="drawTitle">Sorteo</h1>
+        <p>Participan solo las rifas asignadas.</p>
+      </header>
+      <p id="drawMessage" class="draw-message" role="status" aria-live="polite"></p>
+      <div class="draw-prizes">
+        <article class="draw-prize" id="firstPrize" aria-labelledby="firstPrizeTitle">
+          <h2 id="firstPrizeTitle">1º Premio</h2>
+          <div class="draw-image-stage"><img id="firstPrizePokemon" class="draw-pokemon is-silhouette" src="/assets/draw-pokemon/25.png" alt="Silueta de Pikachu" width="160" height="160"></div>
+          <p id="firstPrizeNumber" class="draw-number">Nro de rifa —</p>
+          <div id="firstPrizeWinner" class="draw-winner" aria-live="polite" hidden>
+            <p id="firstPrizeOwner" class="draw-owner"></p>
+            <p id="firstPrizeSeller" class="draw-seller"></p>
+          </div>
+          <button id="firstPrizeDrawBtn" class="button-gold draw-start" type="button" disabled>SORTEAR!</button>
+          <p id="firstPrizeStatus" class="draw-status" role="status" aria-live="polite">Primer premio</p>
+        </article>
+        <article class="draw-prize" aria-labelledby="secondPrizeTitle">
+          <h2 id="secondPrizeTitle">2º Premio</h2>
+          <div class="draw-image-stage"><img class="draw-pokemon is-silhouette" src="/assets/draw-pokemon/25.png" alt="Silueta de Pikachu" width="160" height="160"></div>
+          <p class="draw-number">Nro de rifa —</p>
+          <button class="button-gold draw-start" type="button" disabled>SORTEAR!</button>
+          <p class="draw-status">Próximamente</p>
+        </article>
+        <article class="draw-prize" aria-labelledby="thirdPrizeTitle">
+          <h2 id="thirdPrizeTitle">3º Premio</h2>
+          <div class="draw-image-stage"><img class="draw-pokemon is-silhouette" src="/assets/draw-pokemon/25.png" alt="Silueta de Pikachu" width="160" height="160"></div>
+          <p class="draw-number">Nro de rifa —</p>
+          <button class="button-gold draw-start" type="button" disabled>SORTEAR!</button>
+          <p class="draw-status">Próximamente</p>
+        </article>
+      </div>
     </section>
   </main>
 
@@ -176,6 +214,6 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script type="module" src="/app.js?v=1.8.0"></script>
+  <script type="module" src="/app.js?v=1.9.0"></script>
 </body>
 </html>
