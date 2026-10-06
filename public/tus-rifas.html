@@ -6,19 +6,26 @@
   <meta name="theme-color" content="#ffffff">
   <meta name="referrer" content="no-referrer">
   <title>Tus rifas — Fiebre de otoño</title>
-  <link rel="stylesheet" href="/styles.css?v=1.6.0">
+  <link rel="stylesheet" href="/styles.css?v=1.7.0">
 </head>
 <body class="buyer-page">
   <main class="buyer-shell">
     <p class="buyer-brand">Fiebre de otoño</p>
     <h1>Tus rifas:</h1>
-    <p id="buyerName" class="owner-name"></p>
     <p id="buyerLoading" role="status">Cargando…</p>
-    <div id="buyerRaffles" class="buyer-raffles" hidden></div>
+    <div id="buyerRaffles" class="buyer-carousel" tabindex="0" aria-label="Tus cartas de rifa" hidden></div>
+    <div id="buyerControls" class="buyer-carousel-controls" hidden>
+      <button id="buyerPrevious" type="button" aria-label="Rifa anterior">‹</button>
+      <p id="buyerPosition" role="status" aria-live="polite" aria-atomic="true"></p>
+      <button id="buyerNext" type="button" aria-label="Rifa siguiente">›</button>
+    </div>
     <p id="buyerError" role="status" hidden></p>
     <button id="buyerRetry" class="button-light" type="button" hidden>Reintentar</button>
-    <footer>Fiebre Producciones © 2026</footer>
+    <div class="buyer-motion-controls">
+      <button id="motionToggle" class="card-motion-toggle" type="button" aria-pressed="false" aria-describedby="motionHint" hidden>Activar movimiento</button>
+      <p id="motionHint" class="card-motion-hint" role="status" hidden></p>
+    </div>
   </main>
-  <script type="module" src="/tus-rifas.js?v=1.6.0"></script>
+  <script type="module" src="/tus-rifas.js?v=1.7.0"></script>
 </body>
 </html>

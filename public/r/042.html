@@ -10,7 +10,7 @@
   <meta property="og:site_name" content="Fiebre de otoño">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Rifa “Fiebre de otoño”: NRO 042">
-  <link rel="stylesheet" href="/styles.css?v=1.6.0">
+  <link rel="stylesheet" href="/styles.css?v=1.7.0">
 </head>
 <body class="certificate-page" data-raffle-number="42">
   <main id="certificate" class="certificate" hidden>
@@ -27,6 +27,12 @@
   </main>
   <main id="loadingState" class="certificate-state">Cargando…</main>
   <main id="invalidState" class="certificate-state" hidden><strong>RIFA NO ENCONTRADA</strong></main>
-  <script type="module" src="/certificado.js?v=1.6.0"></script>
+  <main id="loadErrorState" class="certificate-state" hidden>
+    <div>
+      <p role="status">No se pudo cargar la rifa. Revisá tu conexión e intentá de nuevo.</p>
+      <button id="certificateRetry" class="card-motion-toggle" type="button">Reintentar</button>
+    </div>
+  </main>
+  <script type="module" src="/certificado.js?v=1.7.0"></script>
 </body>
 </html>

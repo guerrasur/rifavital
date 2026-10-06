@@ -1,22 +1,24 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
-import { firebaseConfig } from "/firebase-config.js";
 import { pokemonSprite } from "/pokemon.js";
-import { initCardMotion } from "/card-motion.js?v=1.6.0";
+import { initCardMotion } from "/card-motion.js?v=1.7.0";
+import { fetchCertificate } from "/certificate-data.js?v=1.7.0";
 
-const VERSION="1.6.0";
-const app=initializeApp(firebaseConfig),db=getFirestore(app),$=id=>document.getElementById(id);
+const VERSION="1.7.0";
+const $=id=>document.getElementById(id);
+let loading=false,motionReady=false;
 const formatRaffleNumber=n=>String(n).padStart(3,"0");
 function invalid(){$("loadingState").hidden=true;$("certificate").hidden=true;$("invalidState").hidden=false}
 
-(async()=>{
-  const id=new URLSearchParams(location.search).get("id");
+async function loadCertificate(){
+  if(loading)return;
+  const id=String(new URLSearchParams(location.search).get("id")||"").trim().toLowerCase();
+  $("loadingState").hidden=false;$("invalidState").hidden=true;$("loadErrorState").hidden=true;$("certificate").hidden=true;
   if(!id||!/^[a-f0-9]{48}$/.test(id))return invalid();
+  loading=true;
   try{
-    const snap=await getDoc(doc(db,"certificates",id));
-    if(!snap.exists())return invalid();
-    const data=snap.data();if(data.status!=="valid")return invalid();
+    const data=await fetchCertificate(id);
+    if(!data||data.status!=="valid")return invalid();
     const n=Number(data.raffleNumber),expected=Number(document.body.dataset.raffleNumber||0);
+    if(!Number.isInteger(n)||n<1||n>150)return invalid();
     if(expected&&expected!==n)return invalid();
     $("raffleNumber").textContent=`RIFA #${formatRaffleNumber(n)}`;
     $("ownerName").textContent=data.buyerName||"";
@@ -25,9 +27,18 @@ function invalid(){$("loadingState").hidden=true;$("certificate").hidden=true;$(
     $("pokemonName").textContent=(data.pokemonName||"").toUpperCase();
     document.title=`Rifa “Fiebre de otoño”: NRO ${formatRaffleNumber(n)}`;
     $("loadingState").hidden=true;$("certificate").hidden=false;
-    initCardMotion($("certificate"),$("motionToggle"),$("motionHint"));
-  }catch(err){console.error(err);invalid()}
-})();
+    if(!motionReady){
+      try{initCardMotion($("certificate"),$("motionToggle"),$("motionHint"))}
+      catch(err){console.warn(err);$("motionToggle").hidden=true}
+      motionReady=true;
+    }
+  }catch(err){
+    console.error(err);
+    $("loadingState").hidden=true;$("certificate").hidden=true;$("invalidState").hidden=true;$("loadErrorState").hidden=false;
+  }finally{loading=false}
+}
+$("certificateRetry").addEventListener("click",loadCertificate);
+loadCertificate();
 
 async function refreshIfStale(){
   try{

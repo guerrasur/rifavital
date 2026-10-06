@@ -7,6 +7,8 @@ button{cursor:pointer}
 button:disabled{opacity:.45;cursor:not-allowed}
 .certificate-page{min-height:100vh;min-height:100svh;display:grid;place-items:center;padding:36px max(24px,env(safe-area-inset-right)) 36px max(24px,env(safe-area-inset-left));perspective:1000px}
 .certificate{width:min(380px,100%);min-width:0;text-align:center;color:#000;background:#fff;border:3px solid #000;border-radius:12px;padding:32px 22px 24px;box-shadow:6px 8px 0 #000;transform:rotateX(var(--card-rotate-x,0deg)) rotateY(var(--card-rotate-y,0deg));transition:transform .16s ease-out;touch-action:pan-y}
+.certificate{position:relative;isolation:isolate}
+.certificate::after{content:"";position:absolute;inset:0;z-index:2;border-radius:9px;pointer-events:none;background:linear-gradient(120deg,transparent 42%,rgba(134,189,255,.28) 47%,rgba(255,255,255,.7) 49.5%,rgba(217,158,255,.24) 51%,rgba(255,222,150,.2) 53%,transparent 58%);background-size:240% 240%;background-position:var(--card-shine-x,50%) var(--card-shine-y,50%);opacity:.38;transition:background-position .16s ease-out}
 .certificate h1{font-size:clamp(32px,8.5vw,48px);line-height:1;margin:0 0 18px;font-weight:900;letter-spacing:-.04em}
 .certificate .owner-name{font-size:clamp(21px,5.5vw,28px);line-height:1.2;overflow-wrap:anywhere}
 .certificate .your-raffle{font-size:clamp(18px,4.7vw,23px);line-height:1.25;overflow-wrap:anywhere}
@@ -16,12 +18,13 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .certificate-instagram:focus-visible,.card-motion-toggle:focus-visible{outline:2px solid #000;outline-offset:4px}
 .card-motion-toggle{display:block;min-height:44px;margin:12px auto 0;border:1px solid #000;border-radius:5px;background:#fff;color:#000;padding:9px 12px;font-size:12px}
 .card-motion-hint{font-size:12px;line-height:1.4;margin:10px 0 0;color:#555}
-@media(prefers-reduced-motion:reduce){.certificate{transform:none!important;transition:none}}
-@media print{.certificate-page{min-height:0;padding:20px;perspective:none}.certificate{transform:none;box-shadow:none}.card-motion-toggle,.card-motion-hint{display:none!important}}
+@media(prefers-reduced-motion:reduce){.certificate{transform:none!important;transition:none}.certificate::after{background-position:50% 50%;transition:none}}
+@media print{.certificate-page{min-height:0;padding:20px;perspective:none}.certificate{transform:none;box-shadow:none}.certificate::after,.card-motion-toggle,.card-motion-hint{display:none!important}}
 .owner-name{font-size:clamp(22px,6vw,34px);margin:0 0 22px}
 .pokemon-image{display:block;width:min(150px,42vw);height:min(150px,42vw);object-fit:contain;margin:0 auto 16px;image-rendering:pixelated}
 .your-raffle{font-size:clamp(20px,5.5vw,30px);font-weight:800;margin:0;text-transform:uppercase}
-.certificate-state{min-height:100vh;display:grid;place-items:center;text-align:center;padding:24px;font-size:22px}
+.certificate-state{display:grid;place-items:center;text-align:center;padding:24px;font-size:22px}
+.certificate-state p{font-size:18px;line-height:1.4;max-width:340px}
 .admin-page{min-height:100vh;background:#f4f4f4}
 .admin-shell{width:min(1180px,calc(100% - 24px));margin:0 auto;padding:24px 0 50px}
 .login-card{width:min(460px,100%);margin:8vh auto 0;background:#fff;border:1px solid #ddd;padding:28px}
@@ -146,17 +149,27 @@ dialog::backdrop{background:rgba(0,0,0,.42)}
 .buyer-link-item>strong,.buyer-link-item>p{grid-column:1/-1;margin:0;overflow-wrap:anywhere}
 .buyer-link-item a{color:#000;font-size:14px}
 .buyer-link-item button,.buyer-page button{border:1px solid #000;padding:8px 10px;font-weight:700}
-.buyer-page{padding:32px 16px;min-height:100vh}
-.buyer-shell{width:min(1040px,100%);margin:0 auto;text-align:center}
-.buyer-brand{font-size:18px;margin:0 0 18px}
-.buyer-shell h1{font-size:clamp(36px,8vw,64px);margin:0 0 14px}
-.buyer-raffles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:28px auto}
-.buyer-raffle{border:1px solid #ddd;padding:16px 8px;min-width:0}
-.buyer-raffle h2{font-size:28px;margin:0 0 10px}
-.buyer-raffle img{width:112px;height:112px;max-width:100%;object-fit:contain;image-rendering:pixelated}
-.buyer-raffle p{font-size:16px;font-weight:700;margin:8px 0 0}
-.buyer-shell footer{margin-top:32px;font-size:13px;color:#555}
-@media(max-width:520px){.buyer-raffles{grid-template-columns:repeat(2,minmax(0,1fr))}.buyer-shell .owner-name{font-size:24px}}
+.buyer-page{padding:20px 0;min-height:100vh;min-height:100svh;display:grid;align-items:center;overflow-x:hidden}
+.buyer-shell{width:min(760px,100%);min-width:0;margin:0 auto;text-align:center}
+.buyer-brand{font-size:15px;margin:0 0 8px}
+.buyer-shell h1{font-size:clamp(28px,7vw,38px);margin:0}
+.buyer-carousel{--buyer-card-width:min(340px,calc(100vw - 100px));position:relative;display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding-inline:calc((100% - var(--buyer-card-width))/2);padding:20px calc((100% - var(--buyer-card-width))/2) 24px;perspective:1200px;overscroll-behavior-x:contain;scrollbar-width:none;touch-action:pan-x pan-y}
+.buyer-carousel::-webkit-scrollbar{display:none}
+.buyer-carousel:focus-visible{outline:2px solid #000;outline-offset:-2px}
+.buyer-raffle.certificate{flex:0 0 var(--buyer-card-width);width:var(--buyer-card-width);min-width:0;padding:26px 20px 20px;scroll-snap-align:center;transform:scale(var(--card-scale,.88)) rotateY(var(--carousel-rotate,0deg)) rotateX(var(--card-rotate-x,0deg)) rotateY(var(--card-rotate-y,0deg));opacity:var(--card-opacity,.75);touch-action:pan-x pan-y}
+.buyer-raffle h2{font-size:clamp(30px,8vw,40px);line-height:1;margin:0 0 14px;font-weight:900;letter-spacing:-.04em}
+.buyer-raffle .owner-name{font-size:23px;line-height:1.2;margin:0 0 16px}
+.buyer-raffle .pokemon-image{width:150px;height:150px;max-width:100%;margin:0 auto 12px}
+.buyer-raffle .your-raffle{font-size:19px;line-height:1.25;margin:0}
+.buyer-raffle .certificate-footer{margin-top:20px;padding-top:14px;font-size:14px;color:#000}
+.buyer-carousel-controls{display:flex;justify-content:center;align-items:center;gap:18px;margin:0 16px}
+.buyer-carousel-controls button{width:44px;height:44px;border:1px solid #000;background:#fff;color:#000;border-radius:50%;padding:0;font-size:28px;font-weight:400;line-height:1}
+.buyer-carousel-controls p{min-width:50px;margin:0;font-size:13px}
+.buyer-motion-controls{padding:0 24px}
+.buyer-motion-controls .card-motion-toggle{margin-top:10px;font-weight:400}
+.certificate-credit{font-size:11px;color:#555;margin:16px 0 0}
+@media(max-height:700px){.buyer-page{padding:12px 0}.buyer-raffle.certificate{padding-top:20px;padding-bottom:16px}.buyer-raffle .pokemon-image{width:118px;height:118px}.buyer-raffle .certificate-footer{margin-top:16px}.buyer-raffle .certificate-credit{margin-top:8px}}
+@media(prefers-reduced-motion:reduce){.buyer-raffle.certificate{transform:scale(var(--card-scale,1))!important;transition:none}}
 @media(max-width:700px){
   .participant-image-actions{width:100%;display:grid;grid-template-columns:1fr 1fr}
   .participant-image-actions button:first-child{grid-column:1/-1}

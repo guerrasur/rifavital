@@ -397,3 +397,11 @@ Cada integrante puede abrir su sección directamente con `/?integrante=lucio` (s
 Los certificados individuales, tanto `/certificado?id=…` como `/r/001?id=…` a `/r/150?id=…`, incluyen un marco negro, el agradecimiento a quienes apoyan la producción y el enlace a [@fiebredeotono](https://instagram.com/fiebredeotono).
 
 La carta se inclina de forma limitada con el sensor de orientación del celular. En iPhone se habilita con **Activar movimiento**, que solicita el permiso del navegador. Si el sensor no está disponible o se rechaza el permiso, la carta responde al dedo o al mouse. Se respeta la preferencia del sistema de reducir movimiento y la impresión conserva una carta plana. Los enlaces, tokens y datos de las rifas se conservan.
+
+### Comprobantes de varias rifas y carga pública (v1.7.0)
+
+`/tus-rifas#ids=…` muestra una carta completa por rifa: número, comprador, Pokémon, agradecimiento e Instagram. Se recorren deslizando horizontalmente, con flechas en pantalla o con el teclado. La carta del centro se agranda y las vecinas asoman a los lados; el movimiento del celular y el reflejo se aplican a la seleccionada. El gesto del dedo queda dedicado a cambiar de carta.
+
+Ambas vistas públicas leen únicamente los certificados indicados en el enlace con la misma conexión de Firestore, configurada para mayor compatibilidad en celulares. Las consultas tienen un tiempo máximo de espera y reintentan errores de conexión transitorios. Un problema de red muestra un mensaje de conexión y **Reintentar**; **Rifa no encontrada** se reserva para identificadores inválidos, documentos inexistentes, rifas anuladas o un número que no coincide con el enlace. No se cambian certificados ni tokens existentes.
+
+La carta incorpora un reflejo diagonal tenue con matices holográficos. Su posición sigue la misma inclinación del sensor, del dedo o del mouse; no intercepta toques y permanece quieto con la preferencia de reducir movimiento.

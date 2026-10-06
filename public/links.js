@@ -17,6 +17,6 @@ export function buyerUrl(origin,tickets){
 
 export function parseBuyerTokens(hash){
   const value=new URLSearchParams(hash.replace(/^#/,"")).get("ids")||"";
-  const tokens=[...new Set(value.split(","))];
+  const tokens=[...new Set(value.split(",").map(token=>token.trim().toLowerCase()))];
   return tokens.length<=150&&tokens.every(token=>/^[a-f0-9]{48}$/.test(token))?tokens:[];
 }

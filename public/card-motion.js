@@ -1,9 +1,10 @@
 // The first sensor reading is neutral, so the card follows how the phone is held.
-export function initCardMotion(card, button, hint) {
+export function initCardMotion(card, button, hint, { getCard = () => card, touchTilt = true } = {}) {
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   const touchDevice = window.matchMedia("(pointer: coarse)").matches;
   const orientation = window.DeviceOrientationEvent;
   const hasSensor = touchDevice && window.isSecureContext && !!orientation;
+  const fallbackMessage = touchTilt ? "Podés mover la carta con el dedo." : "Podés deslizar para cambiar de rifa.";
   let enabled = true, listening = false, received = false, baseline = null;
   let frame = 0, sensorTimeout = 0, touchStart = null, pending = false;
   let rotateX = 0, rotateY = 0;
@@ -15,8 +16,12 @@ export function initCardMotion(card, button, hint) {
     if (frame) return;
     frame = requestAnimationFrame(() => {
       frame = 0;
-      card.style.setProperty("--card-rotate-x", `${rotateX.toFixed(2)}deg`);
-      card.style.setProperty("--card-rotate-y", `${rotateY.toFixed(2)}deg`);
+      const target = getCard();
+      if (!target) return;
+      target.style.setProperty("--card-rotate-x", `${rotateX.toFixed(2)}deg`);
+      target.style.setProperty("--card-rotate-y", `${rotateY.toFixed(2)}deg`);
+      target.style.setProperty("--card-shine-x", `${(50 + rotateY * 3).toFixed(2)}%`);
+      target.style.setProperty("--card-shine-y", `${(50 - rotateX * 3).toFixed(2)}%`);
     });
   }
 
@@ -61,7 +66,7 @@ export function initCardMotion(card, button, hint) {
       stopSensor();
       button.textContent = "Activar movimiento";
       button.setAttribute("aria-pressed", "false");
-      showHint("No se detectó el sensor. Podés mover la carta con el dedo.");
+      showHint(`No se detectó el sensor. ${fallbackMessage}`);
     }, 2500);
   }
 
@@ -84,13 +89,13 @@ export function initCardMotion(card, button, hint) {
       if (typeof orientation.requestPermission === "function") {
         const permission = await orientation.requestPermission();
         if (permission !== "granted") {
-          showHint("Podés mover la carta con el dedo.");
+          showHint(fallbackMessage);
           return;
         }
       }
       if (!reducedMotion.matches) startSensor();
     } catch {
-      showHint("Podés mover la carta con el dedo.");
+      showHint(fallbackMessage);
     } finally {
       pending = false;
       button.disabled = false;
@@ -98,16 +103,19 @@ export function initCardMotion(card, button, hint) {
   });
 
   card.addEventListener("pointerdown", event => {
-    if (event.pointerType !== "touch" || event.target.closest("a, button")) return;
+    if (!touchTilt || event.pointerType !== "touch" || event.target.closest("a, button")) return;
     touchStart = { x: event.clientX, y: event.clientY, id: event.pointerId };
   }, { passive: true });
   card.addEventListener("pointermove", event => {
     if (!enabled || reducedMotion.matches || received || document.hidden) return;
     if (event.pointerType === "touch") {
+      if (!touchTilt) return;
       if (!touchStart || touchStart.id !== event.pointerId) return;
       tilt(-(event.clientY - touchStart.y) * 0.15, (event.clientX - touchStart.x) * 0.15);
     } else {
-      const rect = card.getBoundingClientRect();
+      const target = getCard();
+      if (!target) return;
+      const rect = target.getBoundingClientRect();
       tilt((0.5 - (event.clientY - rect.top) / rect.height) * 16,
         ((event.clientX - rect.left) / rect.width - 0.5) * 16);
     }
@@ -120,15 +128,21 @@ export function initCardMotion(card, button, hint) {
     card.addEventListener(type, endPointer, { passive: true });
   }
   function recenter() { baseline = null; touchStart = null; tilt(0, 0); }
+  card.addEventListener("cardchange", recenter);
   window.addEventListener("orientationchange", recenter);
-  window.screen.orientation?.addEventListener("change", recenter);
+  window.screen.orientation?.addEventListener?.("change", recenter);
   document.addEventListener("visibilitychange", recenter);
   window.addEventListener("pagehide", () => {
     stopSensor();
     cancelAnimationFrame(frame);
     frame = 0;
-    card.style.setProperty("--card-rotate-x", "0deg");
-    card.style.setProperty("--card-rotate-y", "0deg");
+    const target = getCard();
+    if (target) {
+      target.style.setProperty("--card-rotate-x", "0deg");
+      target.style.setProperty("--card-rotate-y", "0deg");
+      target.style.setProperty("--card-shine-x", "50%");
+      target.style.setProperty("--card-shine-y", "50%");
+    }
   });
   window.addEventListener("pageshow", event => {
     if (event.persisted && hasSensor && enabled && button.getAttribute("aria-pressed") === "true") startSensor();
@@ -146,6 +160,6 @@ export function initCardMotion(card, button, hint) {
       startSensor();
     }
   }
-  reducedMotion.addEventListener("change", syncMotionPreference);
+  reducedMotion.addEventListener?.("change", syncMotionPreference);
   syncMotionPreference();
 }
