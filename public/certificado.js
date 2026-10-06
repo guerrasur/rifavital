@@ -1,8 +1,8 @@
 import { pokemonSprite } from "/pokemon.js";
-import { initCardMotion } from "/card-motion.js?v=1.7.0";
-import { fetchCertificate } from "/certificate-data.js?v=1.7.0";
+import { initCardMotion } from "/card-motion.js?v=1.8.0";
+import { fetchCertificate } from "/certificate-data.js?v=1.8.0";
 
-const VERSION="1.7.0";
+const VERSION="1.8.0";
 const $=id=>document.getElementById(id);
 let loading=false,motionReady=false;
 const formatRaffleNumber=n=>String(n).padStart(3,"0");

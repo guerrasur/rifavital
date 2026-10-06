@@ -1,15 +1,17 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-import { initializeFirestore, collection, getDocs, getDoc, doc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { initializeFirestore, collection, getDocs, getDoc, doc, writeBatch, serverTimestamp, onSnapshot } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { firebaseConfig, ADMIN_UID } from "/firebase-config.js";
 import { pokemonName, pokemonSprite } from "/pokemon.js";
 import { buyerGroups, buyerUrl } from "/links.js";
+import { initRafflePoster } from "/raffle-poster.js?v=1.8.0";
 
 const app=initializeApp(firebaseConfig), auth=getAuth(app), db=initializeFirestore(app,{experimentalForceLongPolling:true});
 const $=id=>document.getElementById(id), state=new Map();
-const VERSION="1.7.0";
+const VERSION="1.8.0";
 let latestVersion=VERSION;
 const TOTAL=150, DISTRIBUTION_TOTAL=144, DISTRIBUTION_PEOPLE=9, DISTRIBUTION_SIZE=16;
+initRafflePoster({subscribe:(number,next,error)=>onSnapshot(doc(db,"tickets",String(number).padStart(3,"0")),{includeMetadataChanges:true},snapshot=>next({assigned:Boolean(snapshot.exists()&&snapshot.data().ownerName),fromCache:snapshot.metadata.fromCache,pending:snapshot.metadata.hasPendingWrites}),error)});
 const PARTICIPANTS=[
   {slug:"juana",name:"Juana",start:1,end:16},
   {slug:"fede-diez",name:"Fede Diez",start:17,end:32},

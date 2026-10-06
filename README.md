@@ -405,3 +405,10 @@ La carta se inclina de forma limitada con el sensor de orientación del celular.
 Ambas vistas públicas leen únicamente los certificados indicados en el enlace con la misma conexión de Firestore, configurada para mayor compatibilidad en celulares. Las consultas tienen un tiempo máximo de espera y reintentan errores de conexión transitorios. Un problema de red muestra un mensaje de conexión y **Reintentar**; **Rifa no encontrada** se reserva para identificadores inválidos, documentos inexistentes, rifas anuladas o un número que no coincide con el enlace. No se cambian certificados ni tokens existentes.
 
 La carta incorpora un reflejo diagonal tenue con matices holográficos. Su posición sigue la misma inclinación del sensor, del dedo o del mouse; no intercepta toques y permanece quieto con la preferencia de reducir movimiento.
+
+
+### Afiche general actualizado (v1.8.0)
+
+En el menú de acceso, junto a Admin y Participantes, **Compartir afiche de rifas** abre el afiche original con cruces rojas sobre los números asignados. Se puede copiar como imagen, compartir con el menú nativo o descargar en PNG. El original está en `public/assets/rifa-fiebre-original.jpeg` sin modificaciones.
+
+La vista consulta los 150 documentos individuales permitidos por las reglas actuales y escucha asignaciones y liberaciones mientras está abierta. Al cerrarla cancela las suscripciones. No utiliza el listado restringido de administración ni modifica las reglas. Espera datos confirmados del servidor para habilitar las acciones; ante una falla oculta la vista previa y permite reintentar. La imagen compartida contiene únicamente el afiche y las cruces, sin nombres ni enlaces de compradores.

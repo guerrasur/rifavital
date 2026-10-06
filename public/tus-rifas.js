@@ -1,7 +1,7 @@
 import { pokemonName, pokemonSprite } from "/pokemon.js";
 import { parseBuyerTokens } from "/links.js";
-import { fetchCertificate } from "/certificate-data.js?v=1.7.0";
-import { initCardMotion } from "/card-motion.js?v=1.7.0";
+import { fetchCertificate } from "/certificate-data.js?v=1.8.0";
+import { initCardMotion } from "/card-motion.js?v=1.8.0";
 
 const $=id=>document.getElementById(id),carousel=$("buyerRaffles");
 const reducedMotion=window.matchMedia("(prefers-reduced-motion: reduce)");

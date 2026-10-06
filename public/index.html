@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#ffffff">
   <title>Rifa “Fiebre de otoño” — Administración</title>
-  <link rel="stylesheet" href="/styles.css?v=1.7.0">
+  <link rel="stylesheet" href="/styles.css?v=1.8.0">
 </head>
 <body class="admin-page">
   <div class="version-tools" aria-live="polite">
-    <span id="versionLabel">v1.7.0</span>
+    <span id="versionLabel">v1.8.0</span>
     <button id="updateBtn" type="button" hidden>Actualizar</button>
   </div>
 
@@ -28,6 +28,8 @@
         <button id="adminTabBtn" class="access-tab active" type="button">Admin</button>
         <button id="participantsTabBtn" class="access-tab" type="button">Participantes</button>
       </div>
+
+      <button id="rafflePosterBtn" class="poster-open-button button-light" type="button">Compartir afiche de rifas</button>
 
       <div id="adminAccessPanel">
         <label>Email<input id="email" type="email" autocomplete="email"></label>
@@ -158,8 +160,22 @@
     </div>
   </dialog>
 
+  <dialog id="rafflePosterDialog" class="poster-dialog" aria-labelledby="rafflePosterTitle">
+    <button id="closeRafflePosterBtn" class="dialog-close" aria-label="Cerrar">×</button>
+    <h2 id="rafflePosterTitle">Afiche de rifas</h2>
+    <p>Los números asignados se tachan automáticamente.</p>
+    <p id="rafflePosterMessage" class="message" role="status" aria-live="polite"></p>
+    <img id="rafflePosterPreview" alt="Afiche de Fiebre de otoño con los números asignados tachados en rojo" hidden>
+    <div class="dialog-actions">
+      <button id="copyRafflePosterBtn" type="button" disabled>Copiar imagen</button>
+      <button id="shareRafflePosterBtn" type="button" disabled>Compartir imagen</button>
+      <button id="downloadRafflePosterBtn" class="button-light" type="button" disabled>Descargar</button>
+      <button id="retryRafflePosterBtn" class="button-light" type="button" hidden>Reintentar</button>
+    </div>
+  </dialog>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script type="module" src="/app.js?v=1.7.0"></script>
+  <script type="module" src="/app.js?v=1.8.0"></script>
 </body>
 </html>

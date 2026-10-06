@@ -39,6 +39,13 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .access-tabs{display:grid;grid-template-columns:1fr 1fr;border:1px solid #000;margin:22px 0 18px}
 .access-tab{border:0!important;background:#fff!important;color:#000!important;padding:12px!important}
 .access-tab.active{background:#000!important;color:#fff!important}
+.poster-open-button{width:100%;margin:0 0 18px;min-height:44px}
+.poster-dialog{width:min(620px,calc(100vw - 24px));max-height:90dvh;overflow:auto}
+.poster-dialog>p{font-size:14px}
+#rafflePosterPreview{display:block;width:100%;height:auto;margin:12px 0}
+#rafflePosterPreview[hidden]{display:none}
+.poster-dialog .dialog-actions{flex-wrap:wrap}
+.poster-dialog .dialog-actions button{min-height:44px}
 .participant-intro{margin:0 0 12px!important;color:#555}
 .participant-buttons{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .participant-select{display:flex;flex-direction:column;align-items:flex-start;gap:3px;background:#fff!important;color:#000!important;border:1px solid #aaa!important;padding:12px!important;text-align:left}
