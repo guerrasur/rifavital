@@ -1,15 +1,16 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-import { initializeFirestore, collection, getDocs, getDoc, getDocsFromServer, getDocFromServer, runTransaction, doc, writeBatch, serverTimestamp, onSnapshot } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { initializeFirestore, collection, getDocs, getDoc, getDocsFromServer, runTransaction, doc, writeBatch, serverTimestamp, onSnapshot } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { firebaseConfig, ADMIN_UID } from "/firebase-config.js";
 import { pokemonName, pokemonSprite } from "/pokemon.js";
 import { buyerGroups, buyerUrl } from "/links.js";
 import { initRafflePoster } from "/raffle-poster.js?v=1.8.0";
-import { initDraw } from "/draw.js?v=1.9.0";
+import { initDraw } from "/draw.js?v=1.10.0";
+import { createDrawStorage } from "/draw-storage.js?v=1.10.0";
 
 const app=initializeApp(firebaseConfig), auth=getAuth(app), db=initializeFirestore(app,{experimentalForceLongPolling:true});
 const $=id=>document.getElementById(id), state=new Map();
-const VERSION="1.9.0";
+const VERSION="1.10.0";
 let latestVersion=VERSION;
 const TOTAL=150, DISTRIBUTION_TOTAL=144, DISTRIBUTION_PEOPLE=9, DISTRIBUTION_SIZE=16;
 initRafflePoster({subscribe:(number,next,error)=>onSnapshot(doc(db,"tickets",String(number).padStart(3,"0")),{includeMetadataChanges:true},snapshot=>next({assigned:Boolean(snapshot.exists()&&snapshot.data().ownerName),fromCache:snapshot.metadata.fromCache,pending:snapshot.metadata.hasPendingWrites}),error)});
@@ -46,7 +47,7 @@ function drawRequest(promise){
   let timer;
   return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error("No se pudo conectar con el sorteo. Revisá la conexión e intentá de nuevo.")),15000)})]).finally(()=>clearTimeout(timer));
 }
-const drawRef=doc(db,"draws","first-prize");
+const drawStorage=createDrawStorage({db,doc,runTransaction,serverTimestamp,adminUid:()=>auth.currentUser.uid,request:drawRequest});
 const drawController=initDraw({
   isAdmin:()=>auth.currentUser?.uid===ADMIN_UID,
   sellerForNumber:participantForNumber,
@@ -54,29 +55,32 @@ const drawController=initDraw({
     const snap=await drawRequest(getDocsFromServer(collection(db,"tickets")));
     return snap.docs.map(ticket=>[Number(ticket.id),ticket.data()]);
   },
-  loadResult:async()=>{
-    const snap=await drawRequest(getDocFromServer(drawRef));
-    return snap.exists()?snap.data():null;
-  },
-  saveResult:async(winner,expectedDrawId)=>{
-    try{
-      return await drawRequest(runTransaction(db,async transaction=>{
-        const existing=await transaction.get(drawRef);
-        if(existing.exists()&&existing.data().drawId!==expectedDrawId)return existing.data();
-        if(!existing.exists()&&expectedDrawId)throw new Error("El resultado cambió. Volvé a abrir el sorteo.");
-        const ticket=await transaction.get(doc(db,"tickets",ticketId(winner.number)));
-        if(!ticket.exists()||ticket.data().ownerName?.trim()!==winner.ownerName)throw new Error("Las rifas cambiaron mientras se preparaba el sorteo. Intentá nuevamente.");
-        transaction.set(drawRef,{...winner,prize:1,createdAt:serverTimestamp(),adminUid:auth.currentUser.uid});
-        return winner;
-      }));
-    }catch(error){
-      // A timed-out write may still have committed. Reload before permitting another draw.
-      const saved=await drawRequest(getDocFromServer(drawRef)).catch(()=>null);
-      if(saved?.exists()&&saved.data().drawId===winner.drawId)return saved.data();
-      throw error;
-    }
-  }
+  ...drawStorage
 });
+let menuViewActive=false;
+function renderAccessSession(){
+  const signedIn=auth.currentUser?.uid===ADMIN_UID;
+  $("adminLoginFields").hidden=signedIn;
+  $("adminSessionPanel").hidden=!signedIn;
+}
+function openMainMenu(tab="admin"){
+  selectedParticipant=null;menuViewActive=true;
+  $("masterView").hidden=true;$("participantView").hidden=true;
+  const url=new URL(location.href);url.searchParams.delete("integrante");history.replaceState(null,"",url);
+  if(auth.currentUser?.uid===ADMIN_UID||gateIsOpen()){
+    $("gateView").hidden=true;$("accessView").hidden=false;
+  }else{$("gateView").hidden=false;$("accessView").hidden=true}
+  renderAccessSession();switchAccessTab(tab);window.scrollTo(0,0);
+}
+async function openAdmin(){
+  if(auth.currentUser?.uid!==ADMIN_UID)return;
+  menuViewActive=false;selectedParticipant=null;
+  const url=new URL(location.href);url.searchParams.delete("integrante");history.replaceState(null,"",url);
+  $("gateView").hidden=true;$("accessView").hidden=true;$("participantView").hidden=true;$("masterView").hidden=false;
+  renderAccessSession();setMessage("Cargando…");
+  try{await loadTickets();if(!$("masterView").hidden)setMessage("")}
+  catch(err){console.error(err);setMessage("No se pudo cargar la tabla. Revisá la conexión e intentá nuevamente.")}
+}
 
 function renderParticipantButtons(){
   const box=$("participantButtons");box.innerHTML="";
@@ -102,6 +106,7 @@ function switchAccessTab(tab){
   $("adminTabBtn").classList.toggle("active",admin);
   $("participantsTabBtn").classList.toggle("active",!admin);
   $("loginMessage").textContent="";
+  renderAccessSession();
 }
 
 function gateIsOpen(){
@@ -115,7 +120,7 @@ function gateIsOpen(){
 
 function showAccessAfterGate(){
   $("gateView").hidden=true;
-  if(!auth.currentUser&&!selectedParticipant)$("accessView").hidden=false;
+  if(!selectedParticipant)$("accessView").hidden=false;
 }
 
 function unlockGate(){
@@ -660,12 +665,9 @@ $("gateLoginBtn").addEventListener("click",unlockGate);
 $("gatePassword").addEventListener("keydown",e=>{if(e.key==="Enter")unlockGate()});
 $("adminTabBtn").addEventListener("click",()=>switchAccessTab("admin"));
 $("participantsTabBtn").addEventListener("click",()=>switchAccessTab("participants"));
-$("backParticipantBtn").addEventListener("click",()=>{
-  selectedParticipant=null;$("participantView").hidden=true;
-  const url=new URL(location.href);url.searchParams.delete("integrante");history.replaceState(null,"",url);
-  if(gateIsOpen())$("accessView").hidden=false;else $("gateView").hidden=false;
-  switchAccessTab("participants");
-});
+$("backParticipantBtn").addEventListener("click",()=>openMainMenu("participants"));
+$("backAdminMenuBtn").addEventListener("click",()=>openMainMenu());
+$("returnAdminBtn").addEventListener("click",openAdmin);
 $("copyParticipantLinkBtn").addEventListener("click",()=>{if(selectedParticipant)copyLink(participantUrl(selectedParticipant),$("copyParticipantLinkBtn"),$("participantMessage"))});
 $("participantBuyerLinksBtn").addEventListener("click",openBuyerLinks);
 $("adminBuyerLinksBtn").addEventListener("click",openBuyerLinks);
@@ -675,7 +677,7 @@ $("closeParticipantLinksBtn").addEventListener("click",()=>$("participantLinksDi
 $("downloadParticipantImageBtn").addEventListener("click",downloadParticipantImage);
 $("copyParticipantImageBtn").addEventListener("click",copyParticipantImage);
 $("shareParticipantImageBtn").addEventListener("click",shareParticipantImage);
-$("loginBtn").addEventListener("click",async()=>{ $("loginMessage").textContent=""; try{await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value)}catch(err){console.error(err);$("loginMessage").textContent="Email o contraseña incorrectos."}});
+$("loginBtn").addEventListener("click",async()=>{ $("loginMessage").textContent=""; try{menuViewActive=false;await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value)}catch(err){console.error(err);$("loginMessage").textContent="Email o contraseña incorrectos."}});
 $("password").addEventListener("keydown",e=>{if(e.key==="Enter")$("loginBtn").click()});
 $("logoutBtn").addEventListener("click",()=>signOut(auth));
 $("updateBtn").addEventListener("click",installLatestVersion);
@@ -710,12 +712,12 @@ checkForUpdate();
 onAuthStateChanged(auth,async user=>{
   if(!user){
     drawController.close();
-    $("masterView").hidden=true;
+    $("masterView").hidden=true;renderAccessSession();
     if(!selectedParticipant&&gateIsOpen())$("accessView").hidden=false;
     return;
   }
   if(user.uid!==ADMIN_UID){$("loginMessage").textContent="Esta cuenta no está autorizada.";await signOut(auth);return}
-  if(selectedParticipant)return;
-  selectedParticipant=null;$("gateView").hidden=true;$("accessView").hidden=true;$("participantView").hidden=true;$("masterView").hidden=false;
-  try{await loadTickets()}catch(err){console.error(err);setMessage("Conectado, pero Firestore todavía no permite leer la tabla. Falta desplegar las reglas.")}
+  renderAccessSession();
+  if(selectedParticipant||menuViewActive)return;
+  await openAdmin();
 });

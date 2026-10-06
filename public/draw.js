@@ -1,14 +1,20 @@
 import { pokemonName } from "/pokemon.js";
-import { eligibleTickets, randomIndex, spinDelay } from "/draw-core.js?v=1.9.0";
+import { eligibleTickets, randomIndex, spinDelay } from "/draw-core.js?v=1.10.0";
 
 const $ = id => document.getElementById(id);
 const format = number => String(number).padStart(3, "0");
 const pokemonSprite = number => `/assets/draw-pokemon/${number}.png`;
+const FAST_DURATION = 10000, FAST_INTERVAL = 65;
 
-export function initDraw({ isAdmin, loadTickets, loadResult, saveResult, sellerForNumber }) {
-  let result = null, ready = false, busy = false, generation = 0;
+export function initDraw({ isAdmin, loadTickets, loadResults, saveResult, resetResults, sellerForNumber }) {
+  let results = {}, ready = false, busy = false, generation = 0;
   let sprites = [], preloadPromise;
-  const image = $("firstPrizePokemon"), button = $("firstPrizeDrawBtn"), back = $("backDrawBtn");
+  const back = $("backDrawBtn"), reset = $("resetDrawBtn");
+  const prizes = ["firstPrize", "secondPrize", "thirdPrize"].map((prefix, i) => ({
+    prize: i + 1, card: $(prefix), image: $(prefix + "Pokemon"), button: $(prefix + "DrawBtn"),
+    number: $(prefix + "Number"), winner: $(prefix + "Winner"), owner: $(prefix + "Owner"),
+    seller: $(prefix + "Seller"), status: $(prefix + "Status")
+  }));
   const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   function loadSprite(number) {
@@ -25,137 +31,147 @@ export function initDraw({ isAdmin, loadTickets, loadResult, saveResult, sellerF
       sprite.src = pokemonSprite(number);
     });
   }
-
   function preload() {
     if (!preloadPromise) preloadPromise = Promise.all(Array.from({ length: 150 }, (_, i) => loadSprite(i + 1)))
       .then(loaded => { sprites = loaded.filter(Boolean); });
     return preloadPromise;
   }
-
-  function showPokemon(number, silhouette) {
-    image.src = pokemonSprite(number);
-    image.alt = silhouette ? "Silueta de Pokémon" : pokemonName(number);
-    image.classList.toggle("is-silhouette", silhouette);
+  function showPokemon(panel, number, silhouette) {
+    panel.image.src = pokemonSprite(number);
+    panel.image.alt = silhouette ? "Silueta de Pokémon" : pokemonName(number);
+    panel.image.classList.toggle("is-silhouette", silhouette);
   }
-
-  function showResult(winner, animate = false) {
-    showPokemon(winner.number, false);
-    $("firstPrizeNumber").textContent = `Nro de rifa ${format(winner.number)}`;
-    $("firstPrizeOwner").textContent = winner.ownerName;
-    $("firstPrizeSeller").textContent = `Vendedor: ${winner.participantName}`;
-    $("firstPrizeWinner").hidden = false;
-    $("firstPrizeStatus").textContent = "¡Tenemos ganador!";
-    button.textContent = "Volver a sortear";
+  function showResult(panel, winner, animate = false) {
+    showPokemon(panel, winner.number, false);
+    panel.number.textContent = `Nro de rifa ${format(winner.number)}`;
+    panel.owner.textContent = winner.ownerName;
+    panel.seller.textContent = `Vendedor: ${winner.participantName}`;
+    panel.winner.hidden = false; panel.status.textContent = "¡Tenemos ganador!";
+    panel.button.textContent = "Volver a sortear";
     if (animate && !reducedMotion) {
-      image.classList.remove("is-revealing");
-      void image.offsetWidth;
-      image.classList.add("is-revealing");
+      panel.image.classList.remove("is-revealing"); void panel.image.offsetWidth;
+      panel.image.classList.add("is-revealing");
     }
   }
-
-  function setBusy(value) {
-    busy = value; back.disabled = value; button.disabled = value || !ready;
-    $("firstPrize").setAttribute("aria-busy", String(value));
+  function clearPanel(panel) {
+    panel.image.classList.remove("is-revealing"); showPokemon(panel, 25, true);
+    panel.winner.hidden = true; panel.owner.textContent = ""; panel.seller.textContent = "";
+    panel.number.textContent = "Nro de rifa —"; panel.button.textContent = "SORTEAR!";
+    panel.status.textContent = "Listo para sortear";
   }
-
+  function renderResults() {
+    prizes.forEach(panel => results[panel.prize]?.number ? showResult(panel, results[panel.prize]) : clearPanel(panel));
+  }
+  function setBusy(value, panel = null) {
+    busy = value; back.disabled = value; reset.disabled = value || !ready;
+    prizes.forEach(item => {
+      item.button.disabled = value || !ready;
+      item.card.setAttribute("aria-busy", String(value && item === panel));
+    });
+  }
   async function open() {
     if (!isAdmin() || busy) return;
     const current = ++generation;
-    ready = false; result = null; button.disabled = true;
+    ready = false; results = {}; renderResults(); setBusy(false);
     $("masterView").hidden = true; $("drawView").hidden = false;
     document.body.classList.add("drawing-page");
     $("drawTitle").focus(); window.scrollTo(0, 0);
     $("drawMessage").textContent = "Cargando sorteo…";
-    $("firstPrizeWinner").hidden = true;
-    $("firstPrizeNumber").textContent = "Nro de rifa —";
-    button.textContent = "SORTEAR!"; showPokemon(25, true);
     preload();
     try {
-      const saved = await loadResult();
+      const saved = await loadResults();
       if (current !== generation || !isAdmin()) return;
-      result = saved; ready = true;
-      if (saved) showResult(saved);
-      else $("firstPrizeStatus").textContent = "Listo para sortear";
-      $("drawMessage").textContent = "";
+      results = saved; ready = true; renderResults(); $("drawMessage").textContent = "";
     } catch (error) {
-      console.error(error);
-      $("drawMessage").textContent = "No se pudo cargar el sorteo. Volvé a Admin e intentá de nuevo.";
-    } finally {
-      if (current === generation) setBusy(false);
-    }
+      if (current !== generation) return;
+      console.error(error); $("drawMessage").textContent = "No se pudo cargar el sorteo. Volvé a Admin e intentá de nuevo.";
+    } finally { if (current === generation) setBusy(false); }
   }
-
-  // The run token prevents an old animation from revealing data after sign-out.
   const wait = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
-  async function start() {
+  async function recover(error, active) {
+    console.error(error);
+    const saved = await loadResults().catch(() => null);
+    if (!active()) return;
+    if (saved) { results = saved; ready = true; }
+    else ready = false;
+    renderResults();
+    $("drawMessage").textContent = error?.message || "No se pudo guardar el sorteo. Revisá la conexión e intentá de nuevo.";
+  }
+  async function start(panel) {
     if (busy || !ready || !isAdmin()) return;
-    if (result && !confirm("¿Volver a sortear el primer premio? Se reemplazará el ganador guardado.")) return;
-    const current = ++generation, previous = result;
+    if (results[panel.prize]?.number && !confirm(`¿Volver a sortear el ${panel.prize}º premio? Se reemplazará el ganador guardado.`)) return;
+    const current = ++generation, expected = { ...results };
     const active = () => current === generation && isAdmin();
-    setBusy(true); image.classList.remove("is-revealing");
+    setBusy(true, panel); panel.image.classList.remove("is-revealing");
     $("drawMessage").textContent = "Preparando rifas y Pokémon…";
     try {
       const [entries] = await Promise.all([loadTickets(), preload()]);
       if (!active()) return;
-      const eligible = eligibleTickets(entries, sellerForNumber);
-      if (!eligible.length) throw new Error("Todavía no hay rifas asignadas para sortear.");
+      const usedNumbers = new Set(prizes.filter(item => item !== panel).map(item => results[item.prize]?.number).filter(Boolean));
+      const eligible = eligibleTickets(entries, sellerForNumber).filter(ticket => !usedNumbers.has(ticket.number));
+      if (!eligible.length) throw new Error("No quedan rifas asignadas disponibles para este premio.");
       const winner = eligible[randomIndex(eligible.length)];
-      // Never reroll an eligible winner because its image failed to load.
       if (!sprites.some(sprite => sprite.number === winner.number)) {
         const loaded = await loadSprite(winner.number);
         if (!loaded) throw new Error("No se pudo cargar el Pokémon. Revisá la conexión e intentá nuevamente.");
         sprites.push(loaded);
       }
       if (!active()) return;
-      const selected = await saveResult({ ...winner, drawId: crypto.randomUUID(), eligibleNumbers: eligible.map(ticket => ticket.number), eligibleCount: eligible.length }, previous?.drawId || null);
+      const selected = await saveResult(panel.prize, { ...winner, drawId: crypto.randomUUID(), eligibleNumbers: eligible.map(ticket => ticket.number), eligibleCount: eligible.length }, expected);
       if (!active()) return;
-      result = selected;
-      if (selected.drawId !== undefined && selected.number !== winner.number && !sprites.some(sprite => sprite.number === selected.number)) {
-        await loadSprite(selected.number);
-      }
-      $("drawMessage").textContent = `${selected.eligibleCount} rifas participaron.`;
-      $("firstPrizeWinner").hidden = true;
-      $("firstPrizeNumber").textContent = "Nro de rifa —";
-      button.textContent = "SORTEANDO…";
-      $("firstPrizeStatus").textContent = "Sorteando…";
+      results[panel.prize] = selected;
+      $("drawMessage").textContent = `${selected.eligibleCount} rifas participaron en el ${panel.prize}º premio.`;
+      panel.winner.hidden = true; panel.number.textContent = "Nro de rifa —";
+      panel.button.textContent = "SORTEANDO…"; panel.status.textContent = "Sorteando…";
       if (!reducedMotion) {
         let lastNumber = 25;
-        for (let step = 0; step < 38; step++) {
-          if (!active()) return;
+        const change = () => {
           const options = sprites.filter(sprite => sprite.number !== lastNumber);
           const sprite = options.length ? options[randomIndex(options.length)] : sprites[0];
-          lastNumber = sprite.number; showPokemon(sprite.number, true);
-          await wait(spinDelay(step));
+          lastNumber = sprite.number; showPokemon(panel, sprite.number, true);
+        };
+        for (let elapsed = 0; elapsed < FAST_DURATION;) {
+          if (!active()) return;
+          change(); const delay = Math.min(FAST_INTERVAL, FAST_DURATION - elapsed);
+          await wait(delay); elapsed += delay;
+        }
+        for (let step = 0; step < 38; step++) {
+          if (!active()) return;
+          change(); await wait(spinDelay(step));
         }
       }
       if (!active()) return;
-      showPokemon(selected.number, true);
-      $("firstPrizeStatus").textContent = "¿Quién será?";
+      showPokemon(panel, selected.number, true); panel.status.textContent = "¿Quién será?";
       await wait(2400);
       if (!active()) return;
-      showResult(selected, true);
-    } catch (error) {
-      console.error(error);
-      if (!active()) return;
-      if (result) showResult(result);
-      else { showPokemon(25, true); button.textContent = "SORTEAR!"; $("firstPrizeStatus").textContent = "Listo para sortear"; }
-      $("drawMessage").textContent = error?.message || "No se pudo guardar el sorteo. Revisá la conexión e intentá de nuevo.";
-    } finally {
-      if (current === generation) setBusy(false);
-    }
+      showResult(panel, selected, true);
+    } catch (error) { if (active()) await recover(error, active); }
+    finally { if (current === generation) setBusy(false); }
   }
-
+  async function resetWinners() {
+    if (busy || !ready || !isAdmin()) return;
+    if (!confirm("¿Reiniciar los tres ganadores de prueba? Las rifas y sus compradores se conservarán.")) return;
+    const current = ++generation, active = () => current === generation && isAdmin();
+    setBusy(true); $("drawMessage").textContent = "Reiniciando ganadores…";
+    try {
+      const cleared = await resetResults({ ...results });
+      if (!active()) return;
+      results = cleared; renderResults(); $("drawMessage").textContent = "Ganadores reiniciados. Podés empezar otra prueba.";
+    } catch (error) { if (active()) await recover(error, active); }
+    finally { if (current === generation) setBusy(false); }
+  }
   function close(force = false) {
     if (busy && !force) return;
     ++generation; ready = false; setBusy(false);
     $("drawView").hidden = true; document.body.classList.remove("drawing-page");
     if (isAdmin()) { $("masterView").hidden = false; $("openDrawBtn").focus(); }
   }
-
   $("drawTitle").tabIndex = -1;
   $("openDrawBtn").addEventListener("click", open);
-  back.addEventListener("click", () => close());
-  button.addEventListener("click", start);
-  image.addEventListener("animationend", () => image.classList.remove("is-revealing"));
+  back.addEventListener("click", () => close()); reset.addEventListener("click", resetWinners);
+  prizes.forEach(panel => {
+    panel.button.addEventListener("click", () => start(panel));
+    panel.image.addEventListener("animationend", () => panel.image.classList.remove("is-revealing"));
+  });
   return { close: () => close(true) };
 }

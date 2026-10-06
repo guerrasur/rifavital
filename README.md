@@ -424,3 +424,11 @@ Participan solo las rifas asignadas consultadas desde el servidor al iniciar: ca
 El resultado y los números participantes se guardan en `draws/first-prize`, con acceso exclusivo de administradores. Una transacción evita sobrescribir un resultado generado simultáneamente desde otro dispositivo y verifica que el número seleccionado siga asignado al mismo comprador. El resultado permanece al recargar; **Volver a sortear** requiere confirmar que se reemplazará el ganador. El botón y el regreso se bloquean durante el proceso. Si se pierde la sesión, la vista se cierra. Con reducción de movimiento se omite el recorrido rápido y la ampliación.
 
 Los 150 sprites transparentes de Red/Blue de [PokéAPI/sprites](https://github.com/PokeAPI/sprites/tree/master/sprites/pokemon/versions/generation-i/red-blue/transparent) se sirven localmente desde `public/assets/draw-pokemon/`, para que la animación no dependa de un servidor externo.
+
+### Tres premios y pruebas (v1.10.0)
+
+Los tres premios están activos y guardan resultados independientes. Cada animación suma diez segundos rápidos antes de la desaceleración original; se conserva la pausa de 2,4 segundos y la ampliación de 340 ms. Un número ganador queda fuera de los otros premios; un comprador con varias rifas puede ganar con números distintos.
+
+**Reiniciar ganadores** limpia los tres resultados mediante una única transacción, sin modificar rifas, compradores ni certificados. Conserva una marca de reinicio para impedir que una operación de otro dispositivo con resultados antiguos restaure un ganador anterior. Requiere confirmación y queda bloqueado durante las animaciones. Los resultados del primer premio de v1.9.0 se conservan.
+
+Admin incluye **Menú principal**, que mantiene la sesión y permite entrar a Participantes. Desde la pestaña Admin, **Entrar a Admin** vuelve sin pedir credenciales y recarga la tabla completa. **Cerrar sesión** queda separado.
