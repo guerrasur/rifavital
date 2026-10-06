@@ -5,9 +5,19 @@ html,body{margin:0;min-height:100%;background:#fff}
 button,input,select,textarea{font:inherit}
 button{cursor:pointer}
 button:disabled{opacity:.45;cursor:not-allowed}
-.certificate-page{min-height:100vh;display:grid;place-items:center;padding:32px 20px}
-.certificate{width:min(520px,100%);text-align:center;color:#000;background:#fff}
-.certificate h1{font-size:clamp(34px,9vw,64px);line-height:1;margin:0 0 18px;font-weight:900;letter-spacing:-.04em}
+.certificate-page{min-height:100vh;min-height:100svh;display:grid;place-items:center;padding:36px max(24px,env(safe-area-inset-right)) 36px max(24px,env(safe-area-inset-left));perspective:1000px}
+.certificate{width:min(380px,100%);min-width:0;text-align:center;color:#000;background:#fff;border:3px solid #000;border-radius:12px;padding:32px 22px 24px;box-shadow:6px 8px 0 #000;transform:rotateX(var(--card-rotate-x,0deg)) rotateY(var(--card-rotate-y,0deg));transition:transform .16s ease-out;touch-action:pan-y}
+.certificate h1{font-size:clamp(32px,8.5vw,48px);line-height:1;margin:0 0 18px;font-weight:900;letter-spacing:-.04em}
+.certificate .owner-name{font-size:clamp(21px,5.5vw,28px);line-height:1.2;overflow-wrap:anywhere}
+.certificate .your-raffle{font-size:clamp(18px,4.7vw,23px);line-height:1.25;overflow-wrap:anywhere}
+.certificate-footer{margin-top:28px;padding-top:20px;border-top:1px solid #000}
+.certificate-thanks{font-size:14px;line-height:1.5;margin:0 auto 8px;max-width:260px}
+.certificate-instagram{display:inline-flex;align-items:center;min-height:44px;color:#000;font-size:14px;font-weight:700;text-underline-offset:3px}
+.certificate-instagram:focus-visible,.card-motion-toggle:focus-visible{outline:2px solid #000;outline-offset:4px}
+.card-motion-toggle{display:block;min-height:44px;margin:12px auto 0;border:1px solid #000;border-radius:5px;background:#fff;color:#000;padding:9px 12px;font-size:12px}
+.card-motion-hint{font-size:12px;line-height:1.4;margin:10px 0 0;color:#555}
+@media(prefers-reduced-motion:reduce){.certificate{transform:none!important;transition:none}}
+@media print{.certificate-page{min-height:0;padding:20px;perspective:none}.certificate{transform:none;box-shadow:none}.card-motion-toggle,.card-motion-hint{display:none!important}}
 .owner-name{font-size:clamp(22px,6vw,34px);margin:0 0 22px}
 .pokemon-image{display:block;width:min(150px,42vw);height:min(150px,42vw);object-fit:contain;margin:0 auto 16px;image-rendering:pixelated}
 .your-raffle{font-size:clamp(20px,5.5vw,30px);font-weight:800;margin:0;text-transform:uppercase}

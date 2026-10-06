@@ -391,3 +391,9 @@ Sin una de esas credenciales, el código se sube al repo pero Firebase Hosting n
 Cada integrante puede abrir su sección directamente con `/?integrante=lucio` (slugs: `juana`, `fede-diez`, `juanma`, `lucio`, `rama`, `fede-torres`, `aye`, `sofi`, `blas`). Estos accesos públicos van al bloque del integrante sin pasar por la contraseña de la portada; volver a la portada conserva su contraseña. Desde Admin están disponibles en **Links de integrantes**, y cada integrante tiene **Copiar mi link**.
 
 **Links de compradores** reúne las rifas guardadas bajo el mismo nombre, ignorando mayúsculas y espacios repetidos. En la sección de un integrante incluye su bloque; desde Admin incluye todas las rifas. Conviene usar nombres completos para distinguir compradores. El enlace `/tus-rifas#ids=…` muestra “Tus rifas:” y tarjetas contiguas con número y Pokémon (dos columnas en celular). Solo lleva los identificadores de los certificados incluidos al copiarlo, sin nombres ni permisos de edición. Las rifas liberadas dejan de aparecer; después de nuevas compras hay que copiar el enlace actualizado. Se conservan los enlaces individuales existentes y las reglas de Firestore.
+
+### Comprobante en forma de carta (v1.6.0)
+
+Los certificados individuales, tanto `/certificado?id=…` como `/r/001?id=…` a `/r/150?id=…`, incluyen un marco negro, el agradecimiento a quienes apoyan la producción y el enlace a [@fiebredeotono](https://instagram.com/fiebredeotono).
+
+La carta se inclina de forma limitada con el sensor de orientación del celular. En iPhone se habilita con **Activar movimiento**, que solicita el permiso del navegador. Si el sensor no está disponible o se rechaza el permiso, la carta responde al dedo o al mouse. Se respeta la preferencia del sistema de reducir movimiento y la impresión conserva una carta plana. Los enlaces, tokens y datos de las rifas se conservan.

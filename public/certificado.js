@@ -2,8 +2,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/fireba
 import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { firebaseConfig } from "/firebase-config.js";
 import { pokemonSprite } from "/pokemon.js";
+import { initCardMotion } from "/card-motion.js?v=1.6.0";
 
-const VERSION="1.4.0";
+const VERSION="1.6.0";
 const app=initializeApp(firebaseConfig),db=getFirestore(app),$=id=>document.getElementById(id);
 const formatRaffleNumber=n=>String(n).padStart(3,"0");
 function invalid(){$("loadingState").hidden=true;$("certificate").hidden=true;$("invalidState").hidden=false}
@@ -24,6 +25,7 @@ function invalid(){$("loadingState").hidden=true;$("certificate").hidden=true;$(
     $("pokemonName").textContent=(data.pokemonName||"").toUpperCase();
     document.title=`Rifa “Fiebre de otoño”: NRO ${formatRaffleNumber(n)}`;
     $("loadingState").hidden=true;$("certificate").hidden=false;
+    initCardMotion($("certificate"),$("motionToggle"),$("motionHint"));
   }catch(err){console.error(err);invalid()}
 })();
 
