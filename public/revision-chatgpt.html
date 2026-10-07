@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <title>Revisión de rifas · Fiebre de otoño</title>
+  <style>
+    :root{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#171717;background:#f6f6f2}
+    *{box-sizing:border-box}
+    body{margin:0;padding:20px}
+    main{max-width:1100px;margin:0 auto}
+    h1{margin:0 0 8px;font-size:1.7rem}
+    p{margin:6px 0 16px;color:#555}
+    .summary{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}
+    .chip{background:white;border:1px solid #ddd;border-radius:10px;padding:10px 14px;font-weight:700}
+    table{width:100%;border-collapse:collapse;background:white;border:1px solid #ddd}
+    th,td{padding:8px 10px;border-bottom:1px solid #eee;text-align:left;font-size:.92rem}
+    th{position:sticky;top:0;background:#f1f1ed}
+    .free{color:#777}.assigned{font-weight:700}
+    details{margin-top:18px}
+    pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#111;color:#eee;padding:14px;border-radius:8px;font-size:.78rem}
+    #status{font-weight:600}
+  </style>
+</head>
+<body>
+<main>
+  <h1>Revisión de rifas</h1>
+  <p>Vista pública de solo lectura para auditoría automática. No permite crear, editar ni liberar rifas.</p>
+  <p id="status">Cargando datos…</p>
+  <section class="summary" aria-label="Resumen">
+    <div class="chip">Total: <span id="total">—</span></div>
+    <div class="chip">Asignadas: <span id="assigned">—</span></div>
+    <div class="chip">Libres: <span id="free">—</span></div>
+    <div class="chip">Actualizado: <span id="loadedAt">—</span></div>
+  </section>
+  <table>
+    <thead><tr><th>Nº</th><th>Estado</th><th>Titular</th><th>Responsable</th><th>Pokémon</th><th>Actualización</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <details>
+    <summary>Datos JSON para revisión automática</summary>
+    <pre id="json">[]</pre>
+  </details>
+</main>
+<script type="module" src="/revision-chatgpt.js"></script>
+</body>
+</html>
