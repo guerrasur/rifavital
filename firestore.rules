@@ -76,7 +76,7 @@ service cloud.firestore {
 
     match /tickets/{ticketId} {
       allow get: if true;
-      allow list: if isAdmin();
+      allow list: if true;
       allow create: if isAdmin() || validPublicTicketCreate();
       allow update, delete: if isAdmin();
     }
