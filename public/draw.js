@@ -13,7 +13,7 @@ export function initDraw({ isAdmin, loadTickets, loadResults, saveResult, resetR
   const prizes = ["firstPrize", "secondPrize", "thirdPrize"].map((prefix, i) => ({
     prize: i + 1, card: $(prefix), image: $(prefix + "Pokemon"), button: $(prefix + "DrawBtn"),
     number: $(prefix + "Number"), winner: $(prefix + "Winner"), owner: $(prefix + "Owner"),
-    seller: $(prefix + "Seller"), status: $(prefix + "Status")
+    status: $(prefix + "Status")
   }));
   const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -45,7 +45,6 @@ export function initDraw({ isAdmin, loadTickets, loadResults, saveResult, resetR
     showPokemon(panel, winner.number, false);
     panel.number.textContent = `Nro de rifa ${format(winner.number)}`;
     panel.owner.textContent = winner.ownerName;
-    panel.seller.textContent = `Vendedor: ${winner.participantName}`;
     panel.winner.hidden = false; panel.status.textContent = "¡Tenemos ganador!";
     panel.button.textContent = "Volver a sortear";
     if (animate && !reducedMotion) {
@@ -55,7 +54,7 @@ export function initDraw({ isAdmin, loadTickets, loadResults, saveResult, resetR
   }
   function clearPanel(panel) {
     panel.image.classList.remove("is-revealing"); showPokemon(panel, 25, true);
-    panel.winner.hidden = true; panel.owner.textContent = ""; panel.seller.textContent = "";
+    panel.winner.hidden = true; panel.owner.textContent = "";
     panel.number.textContent = "Nro de rifa —"; panel.button.textContent = "SORTEAR!";
     panel.status.textContent = "Listo para sortear";
   }

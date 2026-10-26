@@ -6,12 +6,12 @@ import { pokemonName, pokemonSprite } from "/pokemon.js";
 import { buyerGroups, buyerUrl } from "/links.js";
 import { initRafflePoster } from "/raffle-poster.js?v=1.11.0";
 import { generatePokemonPosterBlob } from "/pokemon-poster.js?v=1.11.0";
-import { initDraw } from "/draw.js?v=1.10.0";
+import { initDraw } from "/draw.js?v=1.11.1";
 import { createDrawStorage } from "/draw-storage.js?v=1.10.0";
 
 const app=initializeApp(firebaseConfig), auth=getAuth(app), db=initializeFirestore(app,{experimentalForceLongPolling:true});
 const $=id=>document.getElementById(id), state=new Map();
-const VERSION="1.11.0";
+const VERSION="1.11.1";
 let latestVersion=VERSION;
 const TOTAL=150, DISTRIBUTION_TOTAL=144, DISTRIBUTION_PEOPLE=9, DISTRIBUTION_SIZE=16;
 const subscribePosterTicket=(number,next,error)=>onSnapshot(doc(db,"tickets",String(number).padStart(3,"0")),{includeMetadataChanges:true},snapshot=>next({assigned:Boolean(snapshot.exists()&&snapshot.data().ownerName),fromCache:snapshot.metadata.fromCache,pending:snapshot.metadata.hasPendingWrites}),error);
