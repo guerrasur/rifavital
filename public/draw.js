@@ -6,10 +6,10 @@ const format = number => String(number).padStart(3, "0");
 const pokemonSprite = number => `/assets/draw-pokemon/${number}.png`;
 const FAST_DURATION = 10000, FAST_INTERVAL = 65;
 
-export function initDraw({ isAdmin, loadTickets, loadResults, saveResult, resetResults, sellerForNumber }) {
+export function initDraw({ isAdmin, loadTickets, loadResults, saveResult, sellerForNumber }) {
   let results = {}, ready = false, busy = false, generation = 0;
   let sprites = [], preloadPromise;
-  const back = $("backDrawBtn"), reset = $("resetDrawBtn");
+  const back = $("backDrawBtn");
   const prizes = ["firstPrize", "secondPrize", "thirdPrize"].map((prefix, i) => ({
     prize: i + 1, card: $(prefix), image: $(prefix + "Pokemon"), button: $(prefix + "DrawBtn"),
     number: $(prefix + "Number"), winner: $(prefix + "Winner"), owner: $(prefix + "Owner"),
@@ -62,7 +62,7 @@ export function initDraw({ isAdmin, loadTickets, loadResults, saveResult, resetR
     prizes.forEach(panel => results[panel.prize]?.number ? showResult(panel, results[panel.prize]) : clearPanel(panel));
   }
   function setBusy(value, panel = null) {
-    busy = value; back.disabled = value; reset.disabled = value || !ready;
+    busy = value; back.disabled = value;
     prizes.forEach(item => {
       item.button.disabled = value || !ready;
       item.card.setAttribute("aria-busy", String(value && item === panel));
@@ -147,18 +147,6 @@ export function initDraw({ isAdmin, loadTickets, loadResults, saveResult, resetR
     } catch (error) { if (active()) await recover(error, active); }
     finally { if (current === generation) setBusy(false); }
   }
-  async function resetWinners() {
-    if (busy || !ready || !isAdmin()) return;
-    if (!confirm("¿Reiniciar los tres ganadores de prueba? Las rifas y sus compradores se conservarán.")) return;
-    const current = ++generation, active = () => current === generation && isAdmin();
-    setBusy(true); $("drawMessage").textContent = "Reiniciando ganadores…";
-    try {
-      const cleared = await resetResults({ ...results });
-      if (!active()) return;
-      results = cleared; renderResults(); $("drawMessage").textContent = "Ganadores reiniciados. Podés empezar otra prueba.";
-    } catch (error) { if (active()) await recover(error, active); }
-    finally { if (current === generation) setBusy(false); }
-  }
   function close(force = false) {
     if (busy && !force) return;
     ++generation; ready = false; setBusy(false);
@@ -167,7 +155,7 @@ export function initDraw({ isAdmin, loadTickets, loadResults, saveResult, resetR
   }
   $("drawTitle").tabIndex = -1;
   $("openDrawBtn").addEventListener("click", open);
-  back.addEventListener("click", () => close()); reset.addEventListener("click", resetWinners);
+  back.addEventListener("click", () => close());
   prizes.forEach(panel => {
     panel.button.addEventListener("click", () => start(panel));
     panel.image.addEventListener("animationend", () => panel.image.classList.remove("is-revealing"));

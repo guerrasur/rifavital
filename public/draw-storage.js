@@ -30,22 +30,6 @@ export function createDrawStorage({ db, doc, runTransaction, serverTimestamp, ad
         if (saved?.[prize]?.drawId === winner.drawId) return saved[prize];
         throw error;
       }
-    },
-    async resetResults(expected) {
-      const resetId = crypto.randomUUID();
-      try {
-        return await request(runTransaction(db, async transaction => {
-          const current = await read(transaction);
-          verify(current, expected);
-          const cleared = Object.fromEntries(prizes.map(prize => [prize, { prize, cleared: true, drawId: resetId, updatedAt: serverTimestamp(), adminUid: adminUid() }]));
-          prizes.forEach(prize => transaction.set(refs[prize - 1], cleared[prize]));
-          return cleared;
-        }));
-      } catch (error) {
-        const saved = await loadResults().catch(() => null);
-        if (saved && prizes.every(prize => saved[prize]?.drawId === resetId)) return saved;
-        throw error;
-      }
     }
   };
 }

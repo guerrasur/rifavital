@@ -89,8 +89,11 @@ service cloud.firestore {
     }
 
     match /draws/{prizeId} {
-      allow read, create, update: if isAdmin()
+      allow read: if isAdmin()
         && prizeId in ["first-prize", "second-prize", "third-prize"];
+      allow create, update: if isAdmin()
+        && prizeId in ["first-prize", "second-prize", "third-prize"]
+        && !("cleared" in request.resource.data);
       allow delete: if false;
     }
 

@@ -435,6 +435,6 @@ Los 150 sprites transparentes de Red/Blue de [PokéAPI/sprites](https://github.c
 
 Los tres premios están activos y guardan resultados independientes. Cada animación suma diez segundos rápidos antes de la desaceleración original; se conserva la pausa de 2,4 segundos y la ampliación de 340 ms. Un número ganador queda fuera de los otros premios; un comprador con varias rifas puede ganar con números distintos.
 
-**Reiniciar ganadores** limpia los tres resultados mediante una única transacción, sin modificar rifas, compradores ni certificados. Conserva una marca de reinicio para impedir que una operación de otro dispositivo con resultados antiguos restaure un ganador anterior. Requiere confirmación y queda bloqueado durante las animaciones. Los resultados del primer premio de v1.9.0 se conservan.
+Desde v1.11.2 se retira el reinicio de ganadores para el sorteo oficial. Firestore rechaza esa operación incluso desde versiones anteriores. El botón **Volver a sortear** de cada premio sigue pidiendo confirmación.
 
 Admin incluye **Menú principal**, que mantiene la sesión y permite entrar a Participantes. Desde la pestaña Admin, **Entrar a Admin** vuelve sin pedir credenciales y recarga la tabla completa. **Cerrar sesión** queda separado.
